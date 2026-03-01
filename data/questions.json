@@ -1,0 +1,37 @@
+[
+    {
+        "id": 1,
+        "category": "Hardware",
+        "question": "What does CPU stand for?",
+        "options": ["Central Processing Unit", "Computer Personal Unit", "Central Program Utility", "Core Processing Unit"],
+        "correct": 0
+    },
+    {
+        "id": 2,
+        "category": "Web Dev",
+        "question": "Which language runs in a web browser?",
+        "options": ["Java", "C", "Python", "JavaScript"],
+        "correct": 3
+    },
+    {
+        "id": 3,
+        "category": "JS Specific",
+        "question": "What does typeof null return in JavaScript?",
+        "options": ["null", "object", "undefined", "boolean"],
+        "correct": 1
+    },
+    {
+        "id": 4,
+        "category": "Database",
+        "question": "Which of these is a NoSQL database?",
+        "options": ["MySQL", "PostgreSQL", "MongoDB", "Oracle"],
+        "correct": 2
+    },
+    {
+        "id": 5,
+        "category": "Architecture",
+        "question": "What does RAM stand for?",
+        "options": ["Read Access Memory", "Random Access Memory", "Run Access Memory", "Random Active Memory"],
+        "correct": 1
+    }
+]
