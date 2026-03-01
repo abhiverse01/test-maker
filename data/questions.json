@@ -1,37 +1,352 @@
 [
-    {
-        "id": 1,
-        "category": "Hardware",
-        "question": "What does CPU stand for?",
-        "options": ["Central Processing Unit", "Computer Personal Unit", "Central Program Utility", "Core Processing Unit"],
-        "correct": 0
-    },
-    {
-        "id": 2,
-        "category": "Web Dev",
-        "question": "Which language runs in a web browser?",
-        "options": ["Java", "C", "Python", "JavaScript"],
-        "correct": 3
-    },
-    {
-        "id": 3,
-        "category": "JS Specific",
-        "question": "What does typeof null return in JavaScript?",
-        "options": ["null", "object", "undefined", "boolean"],
-        "correct": 1
-    },
-    {
-        "id": 4,
-        "category": "Database",
-        "question": "Which of these is a NoSQL database?",
-        "options": ["MySQL", "PostgreSQL", "MongoDB", "Oracle"],
-        "correct": 2
-    },
-    {
-        "id": 5,
-        "category": "Architecture",
-        "question": "What does RAM stand for?",
-        "options": ["Read Access Memory", "Random Access Memory", "Run Access Memory", "Random Active Memory"],
-        "correct": 1
-    }
+  {
+    "id": 1,
+    "category": "DSA",
+    "question": "What is the time complexity of searching for an element in a balanced Binary Search Tree (BST)?",
+    "options": ["O(n)", "O(log n)", "O(n^2)", "O(1)"],
+    "correct": 1
+  },
+  {
+    "id": 2,
+    "category": "DSA",
+    "question": "Which data structure operates on a LIFO (Last In, First Out) principle?",
+    "options": ["Queue", "Stack", "Array", "Tree"],
+    "correct": 1
+  },
+  {
+    "id": 3,
+    "category": "DSA",
+    "question": "What is the worst-case time complexity of QuickSort?",
+    "options": ["O(n log n)", "O(n)", "O(n^2)", "O(log n)"],
+    "correct": 2
+  },
+  {
+    "id": 4,
+    "category": "DSA",
+    "question": "Which algorithm is used to find the shortest path in a weighted graph with non-negative edges?",
+    "options": ["BFS", "DFS", "Dijkstra's Algorithm", "Bellman-Ford Algorithm"],
+    "correct": 2
+  },
+  {
+    "id": 5,
+    "category": "DSA",
+    "question": "In a Hash Table, what technique is used to resolve collisions by storing elements in a linked list at the same index?",
+    "options": ["Open Addressing", "Linear Probing", "Chaining", "Robin Hood Hashing"],
+    "correct": 2
+  },
+  {
+    "id": 6,
+    "category": "DSA",
+    "question": "What is the space complexity of Merge Sort?",
+    "options": ["O(1)", "O(log n)", "O(n)", "O(n log n)"],
+    "correct": 2
+  },
+  {
+    "id": 7,
+    "category": "DSA",
+    "question": "Which traversal of a Binary Search Tree (BST) gives the elements in sorted order?",
+    "options": ["Preorder", "Inorder", "Postorder", "Level Order"],
+    "correct": 1
+  },
+  {
+    "id": 8,
+    "category": "DSA",
+    "question": "What is the primary advantage of a Linked List over an Array?",
+    "options": ["Random access is faster", "Memory allocation is static", "Insertion and deletion are easier", "Cache locality is better"],
+    "correct": 2
+  },
+  {
+    "id": 9,
+    "category": "DSA",
+    "question": "Which sorting algorithm is considered a 'stable' sort?",
+    "options": ["QuickSort", "Heap Sort", "Selection Sort", "Merge Sort"],
+    "correct": 3
+  },
+  {
+    "id": 10,
+    "category": "DSA",
+    "question": "In a Min-Heap, the root element represents:",
+    "options": ["The maximum value in the heap", "The minimum value in the heap", "The median value", "A random value"],
+    "correct": 1
+  },
+  {
+    "id": 11,
+    "category": "Programming Concepts",
+    "question": "What is the key difference between an Interface and an Abstract Class in OOP?",
+    "options": ["Interfaces can have constructors, abstract classes cannot", "Abstract classes support multiple inheritance, interfaces do not", "Interfaces define a contract without implementation (traditionally), abstract classes can have partial implementation", "There is no difference"],
+    "correct": 2
+  },
+  {
+    "id": 12,
+    "category": "Programming Concepts",
+    "question": "Which of the following is NOT a principle of Object-Oriented Programming?",
+    "options": ["Encapsulation", "Compilation", "Inheritance", "Polymorphism"],
+    "correct": 1
+  },
+  {
+    "id": 13,
+    "category": "Programming Concepts",
+    "question": "In Java and C++, what is 'Garbage Collection'?",
+    "options": ["Manual memory deallocation by the programmer", "Automatic memory management to reclaim memory used by unreachable objects", "A method to delete files", "A tool to fix memory leaks"],
+    "correct": 1
+  },
+  {
+    "id": 14,
+    "category": "Programming Concepts",
+    "question": "What is 'Recursion' in programming?",
+    "options": ["A loop that runs infinitely", "A function that calls itself", "A variable that changes type", "A method to sort arrays"],
+    "correct": 1
+  },
+  {
+    "id": 15,
+    "category": "Programming Concepts",
+    "question": "What is a 'Pointer'?",
+    "options": ["A variable that stores the address of another variable", "A variable that points to the start of a program", "A keyword in Python", "A data type for storing decimals"],
+    "correct": 0
+  },
+  {
+    "id": 16,
+    "category": "Programming Concepts",
+    "question": "What is the difference between 'pass by value' and 'pass by reference'?",
+    "options": ["Pass by value copies the data; pass by reference passes the address of the data", "Pass by value is faster; pass by reference is safer", "Pass by value is used for objects; pass by reference for primitives", "There is no difference"],
+    "correct": 0
+  },
+  {
+    "id": 17,
+    "category": "Programming Concepts",
+    "question": "What is 'Polymorphism'?",
+    "options": ["The ability of a class to inherit from multiple parents", "The ability of different classes to be treated as instances of the same general class", "The ability to hide data", "The ability to overload operators"],
+    "correct": 1
+  },
+  {
+    "id": 18,
+    "category": "Programming Concepts",
+    "question": "What does 'SOLID' stand for in software design?",
+    "options": ["Simple, Open, Light, Integrated, Dynamic", "Single responsibility, Open-closed, Liskov substitution, Interface segregation, Dependency inversion", "Secure, Optimized, Large, Isolated, Distributed", "Structured, Organized, Layered, Indexed, Documented"],
+    "correct": 1
+  },
+  {
+    "id": 19,
+    "category": "Languages",
+    "question": "What is the output of `typeof null` in JavaScript?",
+    "options": ["'null'", "'object'", "'undefined'", "'boolean'"],
+    "correct": 1
+  },
+  {
+    "id": 20,
+    "category": "Languages",
+    "question": "In Python, what is a 'List Comprehension'?",
+    "options": ["A way to access list elements", "A concise way to create lists based on existing lists", "A method to sort lists", "A library for list manipulation"],
+    "correct": 1
+  },
+  {
+    "id": 21,
+    "category": "Languages",
+    "question": "What is a 'Closure' in JavaScript?",
+    "options": ["A function that has no name", "A function that has access to variables from its outer (enclosing) scope, even after the outer function has returned", "A method to close the browser window", "A way to end a loop"],
+    "correct": 1
+  },
+  {
+    "id": 22,
+    "category": "Languages",
+    "question": "Which keyword is used to define a constant variable in JavaScript (ES6+)?",
+    "options": ["var", "let", "const", "static"],
+    "correct": 2
+  },
+  {
+    "id": 23,
+    "category": "Languages",
+    "question": "In C++, what is the difference between 'struct' and 'class'?",
+    "options": ["Structs are faster than classes", "Members of a struct are public by default; members of a class are private by default", "Structs cannot have methods", "Classes cannot be instantiated"],
+    "correct": 1
+  },
+  {
+    "id": 24,
+    "category": "Languages",
+    "question": "What is the purpose of the 'static' keyword in Java?",
+    "options": ["To create a constant variable", "To define a class that cannot be inherited", "To indicate that a member belongs to the class rather than an instance", "To prevent garbage collection"],
+    "correct": 2
+  },
+  {
+    "id": 25,
+    "category": "Languages",
+    "question": "Which SQL command is used to remove a table from a database?",
+    "options": ["DELETE TABLE", "DROP TABLE", "REMOVE TABLE", "TRUNCATE TABLE"],
+    "correct": 1
+  },
+  {
+    "id": 26,
+    "category": "Database",
+    "question": "What does ACID stand for in database transactions?",
+    "options": ["Atomicity, Consistency, Isolation, Durability", "Authentication, Consistency, Integrity, Durability", "Atomicity, Concurrency, Isolation, Data", "Automatic, Concurrent, Isolated, Durable"],
+    "correct": 0
+  },
+  {
+    "id": 27,
+    "category": "Database",
+    "question": "Which of the following is a NoSQL database type that stores data in JSON-like documents?",
+    "options": ["MySQL", "PostgreSQL", "MongoDB", "Redis"],
+    "correct": 2
+  },
+  {
+    "id": 28,
+    "category": "Database",
+    "question": "What is 'Normalization' in databases?",
+    "options": ["Organizing data to reduce redundancy and improve data integrity", "Encrypting data for security", "Creating backups of the database", "Increasing the speed of queries"],
+    "correct": 0
+  },
+  {
+    "id": 29,
+    "category": "Database",
+    "question": "What type of join returns all rows when there is a match in either table?",
+    "options": ["INNER JOIN", "LEFT JOIN", "RIGHT JOIN", "FULL OUTER JOIN"],
+    "correct": 3
+  },
+  {
+    "id": 30,
+    "category": "Database",
+    "question": "What is the purpose of an 'Index' in a database?",
+    "options": ["To create a new table", "To improve the speed of data retrieval operations", "To establish relationships between tables", "To sort data alphabetically"],
+    "correct": 1
+  },
+  {
+    "id": 31,
+    "category": "Operating Systems",
+    "question": "What is 'Deadlock' in an Operating System?",
+    "options": ["A situation where two processes are waiting for each other to release resources indefinitely", "A process that has finished execution", "A program that is running slowly", "A security breach"],
+    "correct": 0
+  },
+  {
+    "id": 32,
+    "category": "Operating Systems",
+    "question": "What is 'Paging'?",
+    "options": ["A memory management scheme that eliminates the need for contiguous allocation of physical memory", "Sending messages between processes", "Swapping data to the disk", "Allocating CPU time slices"],
+    "correct": 0
+  },
+  {
+    "id": 33,
+    "category": "Operating Systems",
+    "question": "What is the difference between a 'Process' and a 'Thread'?",
+    "options": ["They are the same thing", "A process is a program in execution; a thread is a lightweight process within a process", "Threads share memory; processes do not share memory", "Both B and C"],
+    "correct": 3
+  },
+  {
+    "id": 34,
+    "category": "Operating Systems",
+    "question": "Which scheduling algorithm allocates the CPU to the process with the shortest next CPU burst?",
+    "options": ["First-Come, First-Served (FCFS)", "Round Robin", "Shortest Job First (SJF)", "Priority Scheduling"],
+    "correct": 2
+  },
+  {
+    "id": 35,
+    "category": "Operating Systems",
+    "question": "What is 'Virtual Memory'?",
+    "options": ["Memory on the graphics card", "A technique that allows the execution of processes that are not completely in memory", "RAM that is permanently allocated to the OS", "Cache memory"],
+    "correct": 1
+  },
+  {
+    "id": 36,
+    "category": "Networking",
+    "question": "Which layer of the OSI model is responsible for routing packets?",
+    "options": ["Data Link Layer", "Transport Layer", "Network Layer", "Session Layer"],
+    "correct": 2
+  },
+  {
+    "id": 37,
+    "category": "Networking",
+    "question": "What is the purpose of DNS?",
+    "options": ["To transfer files", "To translate domain names to IP addresses", "To send emails", "To secure connections"],
+    "correct": 1
+  },
+  {
+    "id": 38,
+    "category": "Networking",
+    "question": "What is the difference between TCP and UDP?",
+    "options": ["TCP is connectionless; UDP is connection-oriented", "TCP is reliable and ordered; UDP is unreliable and unordered", "UDP is faster for large file transfers; TCP is slower", "TCP uses 64-bit addresses; UDP uses 32-bit"],
+    "correct": 1
+  },
+  {
+    "id": 39,
+    "category": "Networking",
+    "question": "What does HTTP status code 404 indicate?",
+    "options": ["Server Error", "Unauthorized Access", "Resource Not Found", "OK"],
+    "correct": 2
+  },
+  {
+    "id": 40,
+    "category": "Networking",
+    "question": "Which protocol is used for secure communication over a computer network?",
+    "options": ["HTTP", "FTP", "HTTPS", "SMTP"],
+    "correct": 2
+  },
+  {
+    "id": 41,
+    "category": "DSA",
+    "question": "Which algorithm efficiently finds the Minimum Spanning Tree (MST) of a graph?",
+    "options": ["Dijkstra's", "Kruskal's", "Bellman-Ford", "Floyd-Warshall"],
+    "correct": 1
+  },
+  {
+    "id": 42,
+    "category": "DSA",
+    "question": "What is the time complexity of inserting an element at the beginning of an ArrayList?",
+    "options": ["O(1)", "O(log n)", "O(n)", "O(n^2)"],
+    "correct": 2
+  },
+  {
+    "id": 43,
+    "category": "Programming Concepts",
+    "question": "What is 'Dynamic Binding'?",
+    "options": ["Linking a function call to the function body at compile time", "Linking a function call to the function body at runtime", "Linking a library to the program", "Allocating memory at compile time"],
+    "correct": 1
+  },
+  {
+    "id": 44,
+    "category": "DSA",
+    "question": "What is a 'Trie' used for?",
+    "options": ["Sorting numbers", "Storing strings for efficient retrieval", "Balancing trees", "Graph traversal"],
+    "correct": 1
+  },
+  {
+    "id": 45,
+    "category": "Database",
+    "question": "Which of the following is true about 'Primary Key'?",
+    "options": ["It can contain NULL values", "It must contain unique values", "It references another table", "It is always an integer"],
+    "correct": 1
+  },
+  {
+    "id": 46,
+    "category": "System Design",
+    "question": "What is the 'CAP Theorem' regarding distributed systems?",
+    "options": ["Consistency, Availability, Partition Tolerance - pick two", "Consistency, Accuracy, Performance", "Capacity, Availability, Performance", "Centralized, Async, Parallel"],
+    "correct": 0
+  },
+  {
+    "id": 47,
+    "category": "Web",
+    "question": "Which HTTP method is idempotent, meaning multiple identical requests have the same effect as a single one?",
+    "options": ["POST", "GET", "PUT", "PATCH"],
+    "correct": 2
+  },
+  {
+    "id": 48,
+    "category": "DSA",
+    "question": "What is 'Memoization'?",
+    "options": ["Writing memos in code comments", "An optimization technique to store results of expensive function calls", "A method to compress memory", "A sorting technique"],
+    "correct": 1
+  },
+  {
+    "id": 49,
+    "category": "Operating Systems",
+    "question": "What is 'Thrashing'?",
+    "options": ["A situation where the OS spends more time paging than executing applications", "Deleting files securely", "Running multiple threads simultaneously", "High CPU utilization"],
+    "correct": 0
+  },
+  {
+    "id": 50,
+    "category": "DSA",
+    "question": "What is the maximum number of edges in an undirected graph with 'n' vertices?",
+    "options": ["n(n-1)/2", "n(n+1)/2", "n^2", "2^n"],
+    "correct": 0
+  }
 ]
