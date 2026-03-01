@@ -1,75 +1,60 @@
-/* =========================================================
-   GODMODE CSS v4.0 – IMMERSIVE FULLSCREEN ENGINE
-   Premium SaaS / AI Dashboard Visual System
-========================================================= */
+/* =====================================================
+   GODMODE CSS V4.1 – STABLE LAYOUT ENGINE
+   Fully Fixed Positioning + Clean Scroll System
+===================================================== */
 
-/* =========================================================
-   1. DESIGN SYSTEM TOKENS
-========================================================= */
+/* ------------------------------
+   1. DESIGN TOKENS
+------------------------------ */
 
 :root {
 
-/* ---------- COLOR SYSTEM ---------- */
+--bg-base:#f1f5f9;
+--bg-surface:#ffffff;
+--bg-elevated:#ffffff;
 
---bg-root: #0b1220;
---bg-base: #0f172a;
---bg-surface: #111c33;
---bg-elevated: #16223d;
---bg-glass: rgba(255,255,255,0.04);
---bg-glass-strong: rgba(255,255,255,0.08);
+--text-heading:#0f172a;
+--text-body:#334155;
+--text-muted:#64748b;
 
---text-heading: #f8fafc;
---text-body: #cbd5e1;
---text-muted: #64748b;
+--brand-primary:#4f46e5;
+--brand-secondary:#818cf8;
+--brand-gradient:linear-gradient(135deg,#4f46e5,#7c3aed);
 
---brand-primary: #6366f1;
---brand-secondary: #8b5cf6;
---brand-accent: #06b6d4;
+--border-subtle:#e2e8f0;
+--border-default:#cbd5e1;
 
---brand-gradient: linear-gradient(135deg,#6366f1,#8b5cf6);
---brand-gradient-soft: linear-gradient(135deg,rgba(99,102,241,0.15),rgba(139,92,246,0.08));
+--success:#059669;
+--success-surface:#ecfdf5;
+--error:#dc2626;
+--error-surface:#fef2f2;
 
---success: #10b981;
---error: #ef4444;
---warning: #f59e0b;
+--shadow-sm:0 1px 3px rgba(0,0,0,0.08);
+--shadow-md:0 6px 18px rgba(0,0,0,0.08);
+--shadow-lg:0 12px 28px rgba(0,0,0,0.12);
 
-/* ---------- BORDERS ---------- */
+--radius-sm:6px;
+--radius-md:10px;
+--radius-lg:16px;
+--radius-xl:24px;
 
---border-subtle: rgba(255,255,255,0.05);
---border-strong: rgba(255,255,255,0.1);
+--space-1:4px;
+--space-2:8px;
+--space-3:12px;
+--space-4:16px;
+--space-5:24px;
+--space-6:32px;
+--space-8:48px;
 
-/* ---------- SHADOW SYSTEM ---------- */
+--header-height:70px;
 
---shadow-xs: 0 1px 2px rgba(0,0,0,0.2);
---shadow-sm: 0 4px 10px rgba(0,0,0,0.25);
---shadow-md: 0 10px 30px rgba(0,0,0,0.35);
---shadow-lg: 0 20px 60px rgba(0,0,0,0.45);
---shadow-glow: 0 0 40px rgba(99,102,241,0.35);
-
-/* ---------- RADIUS ---------- */
-
---radius-sm: 8px;
---radius-md: 14px;
---radius-lg: 20px;
---radius-xl: 28px;
-
-/* ---------- MOTION ---------- */
-
---ease: cubic-bezier(0.16,1,0.3,1);
---spring: cubic-bezier(.34,1.56,.64,1);
---fast: 120ms;
---normal: 220ms;
---slow: 400ms;
-
-/* ---------- TYPOGRAPHY ---------- */
-
---font-sans: 'Inter', system-ui, sans-serif;
+--ease:cubic-bezier(.16,1,.3,1);
 
 }
 
-/* =========================================================
-   2. GLOBAL RESET
-========================================================= */
+/* ------------------------------
+   2. RESET
+------------------------------ */
 
 *,*::before,*::after{
 box-sizing:border-box;
@@ -82,42 +67,37 @@ height:100%;
 }
 
 body{
-font-family:var(--font-sans);
-background:radial-gradient(circle at 10% 10%,rgba(99,102,241,0.12),transparent 40%),
-radial-gradient(circle at 90% 90%,rgba(6,182,212,0.12),transparent 40%),
-var(--bg-root);
+font-family:'Inter',system-ui,sans-serif;
+background:var(--bg-base);
 color:var(--text-body);
-overflow:hidden;
+overflow:hidden; /* App owns scroll */
 }
 
-/* =========================================================
-   3. FULLSCREEN APP CONTAINER
-========================================================= */
+/* ------------------------------
+   3. APP CONTAINER
+------------------------------ */
 
 .app-container{
-width:100vw;
-height:100vh;
+height:100dvh; /* dynamic viewport */
+width:100%;
 display:flex;
 flex-direction:column;
-background:var(--bg-base);
-backdrop-filter:blur(30px);
-overflow:hidden;
+background:var(--bg-surface);
 }
 
-/* =========================================================
+/* ------------------------------
    4. HEADER
-========================================================= */
+------------------------------ */
 
 .header{
-height:72px;
+height:var(--header-height);
 flex-shrink:0;
 display:flex;
 align-items:center;
 justify-content:space-between;
-padding:0 40px;
-background:var(--bg-glass-strong);
-backdrop-filter:blur(20px);
+padding:0 var(--space-6);
 border-bottom:1px solid var(--border-subtle);
+background:var(--bg-surface);
 z-index:10;
 }
 
@@ -125,7 +105,6 @@ z-index:10;
 font-size:1.1rem;
 font-weight:700;
 color:var(--text-heading);
-letter-spacing:.5px;
 }
 
 .title p{
@@ -133,91 +112,89 @@ font-size:.75rem;
 color:var(--text-muted);
 }
 
-/* =========================================================
-   5. MAIN SPLIT VIEW
-========================================================= */
+/* ------------------------------
+   5. MAIN LAYOUT
+------------------------------ */
 
 .main-card{
 flex:1;
 display:grid;
-grid-template-columns:340px 1fr;
-overflow:hidden;
+grid-template-columns:320px 1fr;
+min-height:0; /* critical for grid scroll */
 }
 
-/* =========================================================
+/* ------------------------------
    SIDEBAR
-========================================================= */
+------------------------------ */
 
 .question-palette{
-background:var(--bg-surface);
+background:var(--bg-base);
 border-right:1px solid var(--border-subtle);
-padding:28px;
+padding:var(--space-5);
 overflow-y:auto;
+min-height:0;
 }
 
-.palette-title{
-font-size:.85rem;
-font-weight:600;
-color:var(--text-heading);
-margin-bottom:20px;
-letter-spacing:.5px;
-}
+/* Grid */
 
 .grid-buttons{
 display:grid;
-grid-template-columns:repeat(auto-fill,minmax(40px,1fr));
-gap:10px;
+grid-template-columns:repeat(5,1fr);
+gap:6px;
 }
 
 .q-btn{
 aspect-ratio:1;
 border-radius:var(--radius-md);
 border:1px solid var(--border-subtle);
-background:var(--bg-elevated);
-color:var(--text-muted);
-cursor:pointer;
-transition:all var(--fast) var(--ease);
-font-size:.8rem;
+background:var(--bg-surface);
+font-size:.75rem;
 font-weight:600;
+cursor:pointer;
+transition:all .15s ease;
 }
 
 .q-btn:hover{
-transform:translateY(-3px);
 border-color:var(--brand-primary);
 color:var(--brand-primary);
+transform:translateY(-2px);
 box-shadow:var(--shadow-sm);
 }
 
 .q-btn.current{
 background:var(--brand-gradient);
 color:white;
-box-shadow:var(--shadow-md),var(--shadow-glow);
-transform:scale(1.1);
+border:none;
+box-shadow:var(--shadow-md);
 }
 
 .q-btn.answered{
-background:rgba(16,185,129,0.15);
-border-color:rgba(16,185,129,0.4);
+background:var(--success-surface);
+border-color:rgba(5,150,105,.2);
 color:var(--success);
 }
 
-/* =========================================================
+/* ------------------------------
    CONTENT AREA
-========================================================= */
+------------------------------ */
 
 .question-box{
-padding:60px 80px;
-overflow-y:auto;
 display:flex;
 flex-direction:column;
+padding:var(--space-8);
+overflow-y:auto;
+min-height:0;
 }
 
+/* Wrapper */
+
 .question-content-wrapper{
-max-width:900px;
+max-width:800px;
 width:100%;
 margin:0 auto;
 display:flex;
 flex-direction:column;
+gap:var(--space-6);
 flex:1;
 }
 
@@ -226,8 +203,7 @@ flex:1;
 .progress-area{
 display:flex;
 align-items:center;
-gap:20px;
-margin-bottom:40px;
+gap:var(--space-4);
 }
 
 .progress-bar-container{
@@ -241,17 +217,15 @@ overflow:hidden;
 .progress-fill{
 height:100%;
 background:var(--brand-gradient);
-transition:width var(--normal) var(--ease);
+transition:width .3s var(--ease);
 }
 
 /* Question */
 
 .question-text{
-font-size:1.8rem;
-font-weight:700;
+font-size:1.5rem;
+font-weight:600;
 color:var(--text-heading);
-margin-bottom:40px;
-line-height:1.4;
 }
 
 /* Options */
@@ -259,174 +233,169 @@ line-height:1.4;
 .options-grid{
 display:flex;
 flex-direction:column;
-gap:18px;
+gap:var(--space-3);
 }
 
 .option-item{
-background:var(--bg-elevated);
+background:var(--bg-base);
 border:1px solid var(--border-subtle);
-padding:18px 24px;
 border-radius:var(--radius-lg);
+padding:var(--space-4);
 display:flex;
 align-items:center;
 cursor:pointer;
-transition:all var(--normal) var(--ease);
+transition:all .2s var(--ease);
 }
 
 .option-item:hover{
-transform:translateX(6px);
 border-color:var(--brand-secondary);
-box-shadow:var(--shadow-sm);
+transform:translateX(4px);
 }
 
 .option-item.selected{
 background:var(--brand-gradient);
-border-color:transparent;
 color:white;
-box-shadow:var(--shadow-md),var(--shadow-glow);
+border:none;
+box-shadow:var(--shadow-lg);
 }
 
 .option-prefix{
-width:34px;
-height:34px;
-border-radius:10px;
+width:32px;
+height:32px;
+margin-right:var(--space-4);
 display:flex;
 align-items:center;
 justify-content:center;
-margin-right:18px;
-font-weight:700;
-background:var(--bg-glass);
+border-radius:var(--radius-md);
+background:var(--bg-surface);
 border:1px solid var(--border-subtle);
+font-weight:700;
 }
 
 .option-item.selected .option-prefix{
-background:rgba(255,255,255,0.2);
+background:rgba(255,255,255,.2);
 border:none;
 color:white;
 }
 
-/* =========================================================
-   ACTION BAR
-========================================================= */
+/* ------------------------------
+   ACTION BAR (STABLE VERSION)
+------------------------------ */
 
 .action-bar{
 margin-top:auto;
-padding-top:40px;
+padding-top:var(--space-5);
+border-top:1px solid var(--border-subtle);
 display:flex;
 justify-content:space-between;
 align-items:center;
-border-top:1px solid var(--border-subtle);
+gap:var(--space-4);
+background:var(--bg-surface);
+position:sticky;
+bottom:0;
 }
 
+/* Buttons */
+
 button{
-border:none;
-border-radius:var(--radius-md);
-padding:12px 22px;
 font-weight:600;
+padding:10px 20px;
+border-radius:var(--radius-lg);
 cursor:pointer;
-transition:all var(--fast) var(--ease);
+border:none;
+transition:all .15s ease;
 }
 
 .btn-nav{
-background:var(--bg-elevated);
-color:var(--text-body);
-border:1px solid var(--border-subtle);
-}
-
-.btn-nav:hover{
-transform:translateY(-2px);
-border-color:var(--brand-primary);
+background:var(--bg-base);
+border:1px solid var(--border-default);
 }
 
 .btn-primary{
 background:var(--brand-gradient);
 color:white;
-box-shadow:var(--shadow-sm);
 }
 
 .btn-primary:hover{
 transform:translateY(-2px);
-box-shadow:var(--shadow-md),var(--shadow-glow);
+box-shadow:var(--shadow-md);
 }
 
-/* =========================================================
+/* ------------------------------
    RESULTS
-========================================================= */
+------------------------------ */
 
 .results-list{
-flex:1;
+display:flex;
+flex-direction:column;
+gap:var(--space-3);
 overflow-y:auto;
-padding:30px;
-background:var(--bg-surface);
-border-radius:var(--radius-xl);
+flex:1;
+min-height:0;
 }
 
 .result-item{
-padding:18px;
+padding:var(--space-4);
 border-radius:var(--radius-md);
-margin-bottom:14px;
 border-left:4px solid transparent;
-background:var(--bg-elevated);
+background:var(--bg-base);
 }
 
 .result-item.correct{
 border-color:var(--success);
-background:rgba(16,185,129,0.08);
+background:var(--success-surface);
 }
 
 .result-item.wrong{
 border-color:var(--error);
-background:rgba(239,68,68,0.08);
+background:var(--error-surface);
 }
 
-/* =========================================================
-   SCROLLBAR
-========================================================= */
-
-::-webkit-scrollbar{
-width:8px;
-}
-::-webkit-scrollbar-thumb{
-background:var(--border-strong);
-border-radius:10px;
-}
-
-/* =========================================================
+/* ------------------------------
    RESPONSIVE
-========================================================= */
+------------------------------ */
 
-@media(max-width:1100px){
+@media(max-width:1024px){
 
 .main-card{
 grid-template-columns:1fr;
 }
 
+/* Sidebar becomes bottom panel but stays in normal flow */
+
 .question-palette{
-display:none;
+order:2;
+border-right:none;
+border-top:1px solid var(--border-subtle);
+max-height:35vh;
 }
 
 .question-box{
-padding:40px;
+order:1;
 }
 
 }
 
 @media(max-width:768px){
 
+:root{
+--header-height:60px;
+}
+
 .header{
-padding:0 20px;
+padding:0 var(--space-4);
 }
 
 .question-box{
-padding:30px 20px;
+padding:var(--space-5);
 }
 
 .question-text{
-font-size:1.4rem;
+font-size:1.2rem;
 }
 
-.option-item{
-padding:14px;
+.grid-buttons{
+grid-template-columns:repeat(6,1fr);
 }
 
 }
