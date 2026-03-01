@@ -27,19 +27,28 @@ const DOM = {
     darkToggle: document.getElementById('darkToggle')
 };
 
-const timer = new Timer((sec) => {
-    DOM.timerDisplay.textContent = Timer.format(sec);
-});
-
-// --- UTILS ---
+// --- GODMODE UTILITIES ---
 const Utils = {
-    // Custom Modal System (replaces native confirm/alert)
+    // Time Formatter (expands to hours if needed)
+    formatTime(seconds) {
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = seconds % 60;
+        
+        // If over an hour, show h:mm:ss, else mm:ss
+        if (h > 0) {
+            return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+        return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    },
+
+    // Custom Modal System
     showModal(message, onConfirm, onCancel = () => {}) {
         const overlay = document.createElement('div');
         overlay.className = 'modal-overlay';
         overlay.style.cssText = `
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
             display: flex; align-items: center; justify-content: center;
             z-index: 1000; animation: fadeIn 0.2s ease;
         `;
@@ -47,23 +56,37 @@ const Utils = {
         const box = document.createElement('div');
         box.style.cssText = `
             background: var(--bg-secondary); color: var(--text-primary);
-            padding: 2rem; border-radius: 1.5rem; max-width: 400px;
+            padding: 2.5rem; border-radius: 1.5rem; max-width: 420px;
             text-align: center; box-shadow: var(--shadow-xl);
-            border: 1px solid var(--border);
+            border: 1px solid var(--border); transform: scale(0.95);
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         `;
         
         box.innerHTML = `
-            <p style="margin-bottom: 1.5rem; font-size: 1.1rem; line-height: 1.5;">${message}</p>
+            <p style="margin-bottom: 2rem; font-size: 1.1rem; line-height: 1.6; font-weight: 500;">${message}</p>
             <div style="display: flex; gap: 1rem; justify-content: center;">
-                <button id="modalCancel" style="background: var(--neutral-bg); color: var(--text-primary); border: 1px solid var(--border);">Cancel</button>
-                <button id="modalConfirm" style="background: var(--accent-gradient); color: white; box-shadow: 0 4px 12px rgba(79,70,229,0.3);">Confirm</button>
+                <button id="modalCancel" style="
+                    background: var(--bg-primary); color: var(--text-primary); 
+                    border: 1px solid var(--border); padding: 0.8rem 1.5rem; 
+                    border-radius: 0.75rem; font-weight: 600; cursor: pointer;
+                ">Cancel</button>
+                <button id="modalConfirm" style="
+                    background: var(--accent-gradient); color: white; 
+                    box-shadow: 0 4px 12px rgba(79,70,229,0.3); border: none;
+                    padding: 0.8rem 1.5rem; border-radius: 0.75rem; 
+                    font-weight: 600; cursor: pointer;
+                ">Confirm</button>
             </div>
         `;
 
         overlay.appendChild(box);
         document.body.appendChild(overlay);
-
-        const close = () => overlay.remove();
+        
+        // Close handlers
+        const close = () => {
+            overlay.style.opacity = '0';
+            setTimeout(() => overlay.remove(), 200);
+        };
         
         box.querySelector('#modalConfirm').onclick = () => { onConfirm(); close(); };
         box.querySelector('#modalCancel').onclick = () => { onCancel(); close(); };
@@ -73,13 +96,40 @@ const Utils = {
     scrollPaletteToView(index) {
         const btn = DOM.questionGrid.children[index];
         if (btn) {
-            btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+            btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
         }
+    },
+    
+    // Inject Bookmark Button (since we can't change HTML directly)
+    injectBookmarkBtn() {
+        if (document.getElementById('bookmarkBtn')) return;
+        
+        const btn = document.createElement('button');
+        btn.id = 'bookmarkBtn';
+        btn.className = 'btn-text';
+        btn.innerHTML = '🔖 Save'; // Default state
+        btn.style.cssText = 'margin-left: 0.5rem;';
+        
+        // Insert next to clear button
+        DOM.clearBtn.insertAdjacentElement('afterend', btn);
+        return btn;
     }
 };
 
+// --- TIMER SETUP ---
+// We use an offset to handle resumed sessions
+let timerOffset = 0; 
+const timer = new Timer((sec) => {
+    const totalSec = sec + timerOffset;
+    DOM.timerDisplay.textContent = Utils.formatTime(totalSec);
+    
+    // Sync time to Store every second (for persistence)
+    Store.dispatch('TICK', totalSec);
+});
+
 // --- UI RENDERER ---
 let previousIndex = -1;
+let bookmarkBtn = null;
 
 function renderUI(state) {
     // 1. Dark Mode Handling
@@ -87,7 +137,7 @@ function renderUI(state) {
 
     // 2. View Switching Logic
     if (state.isFinished) {
-        if (!DOM.resultView.classList.contains('hidden')) return; // Already finished
+        if (!DOM.resultView.classList.contains('hidden')) return; // Already rendered
         DOM.testView.classList.add('hidden');
         DOM.resultView.classList.remove('hidden');
         renderResults(state);
@@ -100,10 +150,11 @@ function renderUI(state) {
 
     if (!state.testSet || state.testSet.length === 0) return;
 
-    // 3. Render Question & Options (Optimized: only if question changed)
+    // 3. Define currentQ at the top level scope to fix ReferenceError
+    const currentQ = state.testSet[state.currentIndex];
+
+    // 4. Render Question & Options (Optimized: only if question changed)
     if (previousIndex !== state.currentIndex) {
-        const currentQ = state.testSet[state.currentIndex];
-        
         // Animate Question Text
         DOM.questionText.style.opacity = 0;
         DOM.questionText.style.transform = 'translateY(5px)';
@@ -112,22 +163,25 @@ function renderUI(state) {
             DOM.questionText.textContent = currentQ.question;
             DOM.questionText.style.opacity = 1;
             DOM.questionText.style.transform = 'translateY(0)';
-        }, 100); // Quick transition
+        }, 100); 
 
         previousIndex = state.currentIndex;
         
         // Scroll palette to view
         Utils.scrollPaletteToView(state.currentIndex);
+        
+        // Update Bookmark Button State
+        updateBookmarkUI(state);
     }
 
     DOM.questionCounter.textContent = `${state.currentIndex + 1} / ${state.testSize}`;
     
-    // 4. Progress Bar
+    // 5. Progress Bar
     const answeredCount = Store.getAnsweredCount();
     const percent = (answeredCount / state.testSize) * 100;
     DOM.progressFill.style.width = `${percent}%`;
 
-    // 5. Render Options
+    // 6. Render Options
     const currentAns = state.userAnswers[state.currentIndex];
     DOM.optionsContainer.innerHTML = currentQ.options.map((opt, idx) => `
         <label class="option-item ${currentAns === idx ? 'selected' : ''}" data-idx="${idx}">
@@ -137,40 +191,63 @@ function renderUI(state) {
         </label>
     `).join('');
 
-    // 6. Navigation Buttons
+    // 7. Navigation Buttons
     DOM.prevBtn.disabled = state.currentIndex === 0;
     DOM.nextBtn.disabled = state.currentIndex === state.testSize - 1;
 
-    // 7. Render Palette
+    // 8. Render Palette
     renderPalette(state);
 }
 
+function updateBookmarkUI(state) {
+    if (!bookmarkBtn) return;
+    const isBookmarked = state.bookmarked.includes(state.currentIndex);
+    bookmarkBtn.innerHTML = isBookmarked ? '🔖 Saved' : '📑 Save';
+    bookmarkBtn.style.color = isBookmarked ? 'var(--accent)' : 'var(--text-secondary)';
+}
+
 function renderPalette(state) {
-    // Optimization: Only update buttons that changed state if performance becomes an issue.
-    // For 50 items, re-rendering is fine.
     DOM.questionGrid.innerHTML = state.testSet.map((_, idx) => {
         const isAnswered = state.userAnswers[idx] !== null;
         const isCurrent = idx === state.currentIndex;
-        return `<button class="q-btn ${isAnswered ? 'answered' : ''} ${isCurrent ? 'current' : ''}" data-idx="${idx}" title="Jump to Question ${idx+1}">${idx + 1}</button>`;
+        const isBookmarked = state.bookmarked.includes(idx);
+        
+        // Add 'bookmarked' class for CSS styling if needed
+        return `<button class="q-btn ${isAnswered ? 'answered' : ''} ${isCurrent ? 'current' : ''} ${isBookmarked ? 'bookmarked' : ''}" data-idx="${idx}" title="Question ${idx+1}">${idx + 1}</button>`;
     }).join('');
 }
 
 function renderResults(state) {
     const score = Store.getScore();
+    const timeTaken = state.timeElapsed || 0;
+    
     DOM.finalScore.textContent = `${score} / ${state.testSize}`;
     
+    // Calculate Stats
     const percentage = (score / state.testSize) * 100;
+    const avgTimePerQ = (timeTaken / state.testSize).toFixed(1);
+    
     DOM.scoreMessage.textContent = percentage >= 80 ? "Excellent Performance! 🚀" : 
                                    percentage >= 50 ? "Good Job! Keep practicing. 💪" : 
                                    "Needs Improvement. 📚";
 
-    // Inject Filter Controls
+    // Add Stats Row
+    const statsHtml = `
+        <div style="display:flex; justify-content:center; gap:2rem; margin: 1.5rem 0; color: var(--text-secondary); font-size:0.9rem;">
+            <div>⏱️ Time: <strong>${Utils.formatTime(timeTaken)}</strong></div>
+            <div>⚡ Avg: <strong>${avgTimePerQ}s/q</strong></div>
+        </div>
+    `;
+
+    // Inject Filter Controls and Stats
     DOM.resultsList.innerHTML = `
         <div class="result-filters" style="display: flex; gap: 0.5rem; margin-bottom: 1rem; justify-content: center;">
             <button class="filter-btn active" data-filter="all">All</button>
             <button class="filter-btn" data-filter="correct" style="color: var(--success);">Correct</button>
             <button class="filter-btn" data-filter="wrong" style="color: var(--error);">Wrong</button>
+            <button class="filter-btn" data-filter="bookmark" style="color: var(--accent);">Bookmarks</button>
         </div>
+        ${statsHtml}
         <div class="result-items-container" style="display: flex; flex-direction: column; gap: 0.5rem;">
             ${renderResultItems(state, 'all')}
         </div>
@@ -179,11 +256,8 @@ function renderResults(state) {
     // Add Filter Listeners
     DOM.resultsList.querySelectorAll('.filter-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            // Style active state
             DOM.resultsList.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             e.target.classList.add('active');
-            
-            // Re-render list
             const container = DOM.resultsList.querySelector('.result-items-container');
             container.innerHTML = renderResultItems(state, e.target.dataset.filter);
         });
@@ -194,13 +268,20 @@ function renderResultItems(state, filter) {
     return state.testSet.map((q, idx) => {
         const userAns = state.userAnswers[idx];
         const isCorrect = userAns === q.correct;
+        const isBookmarked = state.bookmarked.includes(idx);
 
+        // Filter Logic
         if (filter === 'correct' && !isCorrect) return '';
         if (filter === 'wrong' && isCorrect) return '';
+        if (filter === 'bookmark' && !isBookmarked) return '';
 
         return `
             <div class="result-item ${isCorrect ? 'correct' : 'wrong'}">
-                <div class="result-question">Q${idx+1}: ${q.question}</div>
+                <div class="result-question">
+                    <span style="opacity:0.5; margin-right:8px;">Q${idx+1}</span> 
+                    ${q.question}
+                    ${isBookmarked ? '🔖' : ''}
+                </div>
                 <div class="result-answer">
                     <span style="color: ${isCorrect ? 'var(--success)' : 'var(--error)'}">
                         You: ${userAns !== null ? q.options[userAns] : 'Skipped'}
@@ -214,12 +295,24 @@ function renderResultItems(state, filter) {
 
 // --- EVENT LISTENERS ---
 function initListeners() {
-    // Options Delegation
+    // Inject Bookmark Button
+    bookmarkBtn = Utils.injectBookmarkBtn();
+
+    // Options Delegation (with Auto-Advance feature)
     DOM.optionsContainer.addEventListener('click', (e) => {
         const label = e.target.closest('.option-item');
         if (!label) return;
         const idx = parseInt(label.dataset.idx);
         Store.dispatch('SET_ANSWER', idx);
+
+        // GODMODE: Auto-advance to next question after selecting an answer
+        // Only if not on the last question
+        setTimeout(() => {
+            if (Store.state.currentIndex < Store.state.testSize - 1) {
+                // Optional: uncomment below to enable auto-advance
+                // Store.dispatch('SET_INDEX', Store.state.currentIndex + 1);
+            }
+        }, 300); // Small delay for visual feedback
     });
 
     // Navigation
@@ -238,6 +331,11 @@ function initListeners() {
             Store.dispatch('CLEAR_ANSWER');
         }
     });
+
+    // Bookmark Logic
+    if (bookmarkBtn) {
+        bookmarkBtn.addEventListener('click', () => Store.dispatch('TOGGLE_BOOKMARK'));
+    }
 
     // Palette Navigation (Delegated)
     DOM.questionGrid.addEventListener('click', (e) => {
@@ -264,6 +362,7 @@ function initListeners() {
 
     const startTest = () => {
         Store.dispatch('START_NEW_TEST');
+        timerOffset = 0; // Reset offset
         timer.start();
         DOM.subTitle.textContent = `${Store.state.testSize} Questions · Powered by JSON`;
     };
@@ -281,10 +380,10 @@ function initListeners() {
 
     // --- GODMODE: KEYBOARD SHORTCUTS ---
     document.addEventListener('keydown', (e) => {
-        // Ignore if typing in an input field (unlikely here, but good practice)
+        if (Store.state.isFinished) return;
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
-        const key = e.key;
+        const key = e.key.toLowerCase();
 
         // Number keys 1-4 to select options
         if (key >= '1' && key <= '4') {
@@ -294,27 +393,36 @@ function initListeners() {
             }
         }
 
-        // Arrow Keys for Navigation
-        if (key === 'ArrowRight' || key === 'ArrowDown') {
+        // Navigation Arrows
+        if (key === 'arrowright' || key === 'arrowdown') {
             e.preventDefault();
             const newIdx = Store.state.currentIndex + 1;
             if (newIdx < Store.state.testSize) Store.dispatch('SET_INDEX', newIdx);
         }
         
-        if (key === 'ArrowLeft' || key === 'ArrowUp') {
+        if (key === 'arrowleft' || key === 'arrowup') {
             e.preventDefault();
             const newIdx = Store.state.currentIndex - 1;
             if (newIdx >= 0) Store.dispatch('SET_INDEX', newIdx);
         }
 
-        // Spacebar or Enter for Next/Submit (context aware)
-        if (key === 'Enter') {
-            // If on last question, maybe submit, else next
+        // Enter for Next/Submit
+        if (key === 'enter') {
             if (Store.state.currentIndex === Store.state.testSize - 1) {
                 DOM.submitBtn.click();
             } else {
                 DOM.nextBtn.click();
             }
+        }
+        
+        // 'B' for Bookmark
+        if (key === 'b') {
+            Store.dispatch('TOGGLE_BOOKMARK');
+        }
+        
+        // 'C' for Clear
+        if (key === 'c') {
+            DOM.clearBtn.click();
         }
     });
 }
@@ -332,7 +440,9 @@ async function init() {
 
         if (resumed) {
             DOM.subTitle.textContent = "Resumed from previous session";
-            timer.start(); 
+            // Restore Timer Offset
+            timerOffset = Store.state.timeElapsed || 0;
+            timer.start();
         } else {
             Store.dispatch('START_NEW_TEST');
             timer.start();
