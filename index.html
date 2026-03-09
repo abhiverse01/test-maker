@@ -3,26 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚡ Test-Maker Engine </title>
+    <title>⚡ Test-Maker Engine</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
     <div class="app-container" id="app">
-        <!-- Header Section -->
+
+        <!-- Header -->
         <header class="header">
             <div class="title">
-                <h1>⚡ Test-Maker Engine</h1>
-                <p id="subTitle">Initializing modules...</p>
+                <h1>Test-Maker Engine</h1>
+                <p id="subTitle">ready · 50 questions loaded</p>
             </div>
             <div class="badge-panel">
                 <div class="timer-box">
-                    <span class="timer-label">TIME</span>
+                    <span class="timer-label">Time</span>
                     <div class="timer" id="timerDisplay">00:00</div>
                 </div>
-                <button class="dark-toggle" id="darkToggle" aria-label="Toggle Dark Mode">
+                <button class="dark-toggle" id="darkToggle" aria-label="Toggle theme">
                     <span class="icon-sun">☀️</span>
                     <span class="icon-moon">🌙</span>
                 </button>
@@ -31,7 +31,9 @@
 
         <!-- Test View -->
         <main id="testView" class="main-card">
-            <div class="question-palette" id="paletteContainer">
+
+            <!-- Sidebar Navigator -->
+            <aside class="question-palette" id="paletteContainer" aria-label="Question navigator">
                 <div class="palette-header">
                     <span class="palette-title">Navigator</span>
                     <div class="palette-legend">
@@ -39,50 +41,98 @@
                         <span class="legend-item unanswered">Unanswered</span>
                     </div>
                 </div>
-                <div class="grid-buttons" id="questionGrid"></div>
-            </div>
-
-            <div class="progress-area">
-                <span class="question-counter" id="questionCounter">1 / 50</span>
-                <div class="progress-bar-container">
-                    <div class="progress-fill" id="progressFill"></div>
+                <div class="palette-progress">
+                    <span class="palette-progress-label">Progress</span>
+                    <span class="palette-progress-count" id="paletteProgressCount">0 / 50</span>
                 </div>
-            </div>
+                <div class="grid-buttons" id="questionGrid" role="list"></div>
+            </aside>
 
-            <div class="question-box">
-                <div class="question-text" id="questionText">Loading...</div>
-                <div class="options-grid" id="optionsContainer"></div>
-            </div>
+            <!-- Content Pane -->
+            <div class="content-pane">
 
-            <div class="action-bar">
-                <div class="nav-buttons">
-                    <button id="prevBtn" class="btn-nav">◀ Prev</button>
-                    <button id="nextBtn" class="btn-nav">Next ▶</button>
+                <!-- Progress bar -->
+                <div class="progress-area">
+                    <span class="question-counter" id="questionCounter">1 / 50</span>
+                    <div class="progress-bar-container" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="progressBar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <span class="progress-pct" id="progressPct">0%</span>
                 </div>
-                <div class="action-group-right">
-                    <button id="clearBtn" class="btn-text">Clear</button>
-                    <button id="submitBtn" class="btn-primary">Finish Test 🏁</button>
+
+                <!-- Question + Options -->
+                <div class="question-box" id="questionBox">
+                    <div class="question-content-wrapper">
+                        <div class="question-text" id="questionText">Loading question...</div>
+                        <div class="options-grid stagger-children" id="optionsContainer"></div>
+                    </div>
                 </div>
-            </div>
-            <div class="secondary-actions">
-                <button id="newTestBtn" class="btn-secondary">🔄 Randomize New Test</button>
+
+                <!-- Nav & Submit -->
+                <div class="action-bar">
+                    <div class="nav-buttons">
+                        <button id="prevBtn" class="btn-nav" aria-label="Previous question">&#9664; Prev</button>
+                        <button id="nextBtn" class="btn-nav" aria-label="Next question">Next &#9654;</button>
+                    </div>
+                    <div class="action-group-right">
+                        <button id="clearBtn" class="btn-text" aria-label="Clear selection">Clear</button>
+                        <button id="submitBtn" class="btn-primary">Finish Test &#127937;</button>
+                    </div>
+                </div>
+
+                <!-- Secondary actions -->
+                <div class="secondary-actions">
+                    <button id="newTestBtn" class="btn-secondary">&#128260; Randomize New Test</button>
+                </div>
+
             </div>
         </main>
 
         <!-- Results View -->
-        <section id="resultView" class="main-card hidden">
+        <section id="resultView" class="main-card hidden" aria-label="Test results">
+
             <div class="results-header">
                 <h2>Analysis Complete</h2>
                 <div class="score-big" id="finalScore">0/50</div>
                 <p class="score-message" id="scoreMessage">Calculating performance...</p>
             </div>
-            <div id="resultsList" class="results-list"></div>
-            <div class="result-actions">
-                <button id="restartFromResultsBtn" class="btn-primary">Take New Test</button>
+
+            <div class="stats-row" id="statsRow">
+                <div class="stat-pill">
+                    <span class="stat-val correct" id="statCorrect">--</span>
+                    <span class="stat-label">Correct</span>
+                </div>
+                <div class="stat-pill">
+                    <span class="stat-val wrong" id="statWrong">--</span>
+                    <span class="stat-label">Wrong</span>
+                </div>
+                <div class="stat-pill">
+                    <span class="stat-val" id="statSkipped">--</span>
+                    <span class="stat-label">Skipped</span>
+                </div>
+                <div class="stat-pill">
+                    <span class="stat-val" id="statTime">--</span>
+                    <span class="stat-label">Time</span>
+                </div>
             </div>
+
+            <div class="result-filters" role="tablist">
+                <button class="filter-btn active" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="correct">Correct</button>
+                <button class="filter-btn" data-filter="wrong">Wrong</button>
+                <button class="filter-btn" data-filter="skipped">Skipped</button>
+            </div>
+
+            <div id="resultsList" class="results-list" role="list"></div>
+
+            <div class="result-actions">
+                <button id="restartFromResultsBtn" class="btn-primary">&#128260; Take New Test</button>
+                <button id="reviewBtn" class="btn-secondary">Review Answers</button>
+            </div>
+
         </section>
 
-        <footer>Test-Maker v3 · Modular Architecture · LocalStorage Enabled · Abhishek Shah</footer>
+        <footer>Test-Maker v4 &middot; Precision Terminal Edition &middot; <span>Abhishek Shah</span></footer>
     </div>
 
     <script type="module" src="js/app.js"></script>
