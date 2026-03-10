@@ -1082,3 +1082,605 @@ footer {
 
     .option-item, .result-item { animation: none !important; opacity: 1 !important; transform: none !important; }
 }
+
+
+/* ═══════════════════════════════════════════════════════════
+   SECTION 20 — WELCOME SCREEN  (GODMODE v4.2)
+   ═══════════════════════════════════════════════════════════
+   #welcomeView is position:absolute inset:0 z-index:50 inside
+   .app-container — it overlays the pre-rendered test with no
+   layout disruption. Session resume bypasses it entirely.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────
+   20-A. CONTAINER
+───────────────────────────────────────────────────────────── */
+#welcomeView {
+    position: absolute;
+    inset: 0;
+    z-index: 50;
+    background: var(--bg-void);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    overflow: hidden;
+    /* Inherits appMount entrance from .app-container */
+}
+
+/* Dismiss: slides up + fades; JS adds .hidden on animationend */
+#welcomeView.wv-leaving {
+    animation: wvLeave 440ms var(--ease-out) both;
+    pointer-events: none;
+}
+
+@keyframes wvLeave {
+    0%   { opacity: 1; transform: translateY(0)    scale(1);     }
+    100% { opacity: 0; transform: translateY(-24px) scale(0.99); }
+}
+
+
+/* ─────────────────────────────────────────────────────────────
+   20-B. AMBIENT BACKGROUND
+───────────────────────────────────────────────────────────── */
+.wv-blob {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+}
+.wv-blob-1 {
+    width: 720px; height: 720px;
+    background: radial-gradient(circle, rgba(245,158,11,0.072) 0%, transparent 65%);
+    top: -220px; left: -160px;
+}
+.wv-blob-2 {
+    width: 540px; height: 540px;
+    background: radial-gradient(circle, rgba(6,182,212,0.05) 0%, transparent 65%);
+    bottom: -100px; right: -80px;
+}
+.wv-blob-3 {
+    width: 380px; height: 380px;
+    background: radial-gradient(circle, rgba(245,158,11,0.038) 0%, transparent 65%);
+    top: 38%; right: 6%;
+}
+
+.wv-dots {
+    position: absolute; inset: 0;
+    background-image: radial-gradient(rgba(255,255,255,0.048) 1px, transparent 1px);
+    background-size: 28px 28px;
+    pointer-events: none;
+    opacity: 0.85;
+}
+
+
+/* ─────────────────────────────────────────────────────────────
+   20-C. FRAME CHROME
+───────────────────────────────────────────────────────────── */
+
+/* Amber glow bar — top edge */
+.wv-top-bar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--brand-gradient);
+    box-shadow: 0 0 24px rgba(245,158,11,0.55);
+    z-index: 2;
+    pointer-events: none;
+}
+
+/* Corner crosshair marks */
+.wv-corner {
+    position: absolute;
+    width: 20px; height: 20px;
+    pointer-events: none;
+    z-index: 2;
+}
+.wv-corner::before,
+.wv-corner::after {
+    content: '';
+    position: absolute;
+    background: rgba(245,158,11,0.4);
+}
+.wv-corner::before { width: 100%;  height: 1.5px; top: 0; left: 0; }
+.wv-corner::after  { width: 1.5px; height: 100%;  top: 0; left: 0; }
+
+.wv-corner--tl { top: 26px;    left: 26px; }
+.wv-corner--tr { top: 26px;    right: 26px;  transform: scaleX(-1); }
+.wv-corner--bl { bottom: 26px; left: 26px;   transform: scaleY(-1); }
+.wv-corner--br { bottom: 26px; right: 26px;  transform: scale(-1,-1); }
+
+
+/* ─────────────────────────────────────────────────────────────
+   20-D. SCROLLING TICKER
+───────────────────────────────────────────────────────────── */
+.wv-ticker {
+    position: absolute;
+    top: 2px; left: 0; right: 0; /* sits just below the amber bar */
+    height: 26px;
+    overflow: hidden;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    /* Fade edges */
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%);
+    mask-image:         linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%);
+}
+
+.wv-ticker-track {
+    display: flex;
+    gap: 24px;
+    white-space: nowrap;
+    font-family: var(--font-mono);
+    font-size: 0.5rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(245,158,11,0.42);
+    animation: wvTick 32s linear infinite;
+}
+
+.wv-sep { opacity: 0.35; }
+
+@keyframes wvTick {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+}
+
+
+/* ─────────────────────────────────────────────────────────────
+   20-E. STAGGERED ENTRANCE ANIMATION
+   JS adds .wv-in to trigger; each element has --d (delay) inline
+───────────────────────────────────────────────────────────── */
+.wv-anim {
+    opacity: 0;
+    transform: translateY(16px);
+    transition:
+        opacity   480ms var(--ease-out),
+        transform 480ms var(--ease-out);
+    transition-delay: var(--d, 0ms);
+}
+.wv-anim.wv-in {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+
+/* ─────────────────────────────────────────────────────────────
+   20-F. MAIN CONTENT
+───────────────────────────────────────────────────────────── */
+.wv-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 40px 24px;
+    gap: 0;
+    position: relative;
+    z-index: 4;
+    text-align: center;
+    overflow: hidden;
+    min-height: 0;
+}
+
+
+/* ─────────────────────────────────────────────────────────────
+   20-G. EYEBROW BADGE
+───────────────────────────────────────────────────────────── */
+.wv-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(245,158,11,0.72);
+    margin-bottom: 26px;
+    padding: 5px 14px;
+    border: 1px solid rgba(245,158,11,0.18);
+    border-radius: var(--r-full);
+    background: rgba(245,158,11,0.05);
+}
+
+.wv-pulse-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--brand-primary);
+    box-shadow: 0 0 7px var(--brand-primary);
+    animation: wvDot 2.2s ease-in-out infinite;
+}
+
+@keyframes wvDot {
+    0%,100% { transform: scale(1);   opacity: 1; }
+    50%     { transform: scale(0.6); opacity: 0.45; }
+}
+
+
+/* ─────────────────────────────────────────────────────────────
+   20-H. BRAND WORDMARK
+───────────────────────────────────────────────────────────── */
+.wv-brand {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-bottom: 26px;
+}
+
+.wv-bolt {
+    font-size: clamp(2.4rem, 4.5vw, 3.2rem);
+    line-height: 1;
+    flex-shrink: 0;
+    filter: drop-shadow(0 0 18px rgba(245,158,11,0.8));
+    animation: wvBolt 3.2s ease-in-out infinite;
+}
+
+@keyframes wvBolt {
+    0%,100% { filter: drop-shadow(0 0 12px rgba(245,158,11,0.7)); }
+    50%     { filter: drop-shadow(0 0 28px rgba(245,158,11,1));   }
+}
+
+.wv-name {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 0.88;
+    gap: 1px;
+}
+
+.wv-n1,
+.wv-n2,
+.wv-n3 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(2.4rem, 5.5vw, 4.2rem);
+    letter-spacing: -0.04em;
+    color: var(--text-heading);
+    display: block;
+    line-height: 0.92;
+}
+
+/* "Maker" gets the amber gradient */
+.wv-n2 {
+    background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 42%, #d97706 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 2px 12px rgba(245,158,11,0.22));
+}
+
+
+/* ─────────────────────────────────────────────────────────────
+   20-I. TAGLINE
+───────────────────────────────────────────────────────────── */
+.wv-tagline {
+    font-family: var(--font-body);
+    font-size: clamp(0.88rem, 1.5vw, 1.05rem);
+    font-weight: 400;
+    line-height: 1.68;
+    color: var(--text-body);
+    max-width: 420px;
+    margin-bottom: 26px;
+    letter-spacing: 0.005em;
+}
+
+
+/* ─────────────────────────────────────────────────────────────
+   20-J. FEATURE PILLS
+───────────────────────────────────────────────────────────── */
+.wv-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 32px;
+}
+
+.wv-pill {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    padding: 5px 13px;
+    border-radius: var(--r-full);
+    border: 1px solid;
+    transition: transform var(--t-fast) var(--ease-out);
+}
+.wv-pill:hover { transform: translateY(-2px); }
+
+.wv-amber { color: #f59e0b; border-color: rgba(245,158,11,0.28); background: rgba(245,158,11,0.07); }
+.wv-cyan  { color: #06b6d4; border-color: rgba(6,182,212,0.24);  background: rgba(6,182,212,0.06);  }
+.wv-green { color: #10b981; border-color: rgba(16,185,129,0.22); background: rgba(16,185,129,0.06); }
+.wv-ghost { color: var(--text-muted); border-color: var(--border-subtle); background: var(--bg-elevated); }
+
+
+/* ─────────────────────────────────────────────────────────────
+   20-K. JSON CODE BLOCK
+───────────────────────────────────────────────────────────── */
+.wv-code {
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--r-xl);
+    overflow: hidden;
+    margin: 0 0 36px;
+    width: 100%;
+    max-width: 460px;
+    box-shadow: var(--shadow-md);
+    text-align: left;
+}
+
+.wv-code-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 14px;
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border-faint);
+}
+
+.wv-dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.wv-dot-r { background: #ef4444; opacity: 0.75; }
+.wv-dot-y { background: #f59e0b; opacity: 0.75; }
+.wv-dot-g { background: #10b981; opacity: 0.75; }
+
+.wv-code-name {
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+    margin-left: 4px;
+}
+
+.wv-code-pre {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    line-height: 1.72;
+    padding: 14px 18px;
+    overflow-x: auto;
+    white-space: pre;
+    scrollbar-width: none;
+}
+.wv-code-pre::-webkit-scrollbar { display: none; }
+
+/* Caption strip below code */
+.wv-code-caption {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 14px;
+    border-top: 1px solid var(--border-faint);
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+}
+
+.wv-code-caption strong { color: var(--success); }
+
+.wv-code-caption-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 6px var(--success);
+    flex-shrink: 0;
+    animation: wvDot 2.2s ease-in-out infinite;
+}
+
+/* Syntax colours */
+.s-bracket { color: rgba(139,154,179,0.55); }
+.s-key     { color: #06b6d4; }
+.s-str     { color: rgba(238,242,247,0.52); }
+.s-ok      { color: #f59e0b; font-weight: 700; } /* the correct answer */
+.s-num     { color: #a78bfa; }
+.s-dim     { color: rgba(139,154,179,0.38); }
+
+
+/* ─────────────────────────────────────────────────────────────
+   20-L. CTA — BEGIN BUTTON
+───────────────────────────────────────────────────────────── */
+.wv-cta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 13px;
+}
+
+.wv-begin-btn {
+    /* Override global button styles */
+    font-family:     var(--font-display) !important;
+    font-weight:     800 !important;
+    font-size:       1.05rem !important;
+    letter-spacing:  -0.01em !important;
+    padding:         15px 50px !important;
+    border-radius:   var(--r-xl) !important;
+    border:          none !important;
+    background:      var(--brand-gradient) !important;
+    color:           #0c1018 !important;
+    display:         inline-flex !important;
+    align-items:     center !important;
+    gap:             12px !important;
+    cursor:          pointer;
+    position:        relative;
+    overflow:        hidden;
+    box-shadow:
+        0 0 0 1px rgba(245,158,11,0.28),
+        0 8px 32px rgba(245,158,11,0.32),
+        0 2px 8px  rgba(0,0,0,0.4),
+        inset 0 1px 0 rgba(255,255,255,0.22);
+    transition: all 200ms var(--ease-out) !important;
+}
+
+/* Shimmer sweep on hover */
+.wv-begin-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.18) 50%, transparent 70%);
+    transform: translateX(-120%);
+    transition: transform 550ms var(--ease-out);
+    pointer-events: none;
+}
+.wv-begin-btn:hover::before { transform: translateX(120%); }
+
+.wv-begin-btn:hover {
+    transform:  translateY(-3px) scale(1.025) !important;
+    box-shadow:
+        0 0 0 1.5px rgba(245,158,11,0.45),
+        0 14px 40px rgba(245,158,11,0.48),
+        0 4px 12px rgba(0,0,0,0.4),
+        inset 0 1px 0 rgba(255,255,255,0.28) !important;
+    filter: brightness(1.06);
+}
+
+.wv-begin-btn:active {
+    transform:  translateY(0) scale(0.988) !important;
+    box-shadow:
+        0 0 0 1px rgba(245,158,11,0.25),
+        0 4px 14px rgba(245,158,11,0.28) !important;
+}
+
+.wv-begin-btn:focus-visible {
+    outline:        3px solid var(--brand-primary) !important;
+    outline-offset: 3px !important;
+}
+
+.wv-btn-bolt  { font-size: 1rem;  line-height: 1; }
+.wv-btn-label { line-height: 1; }
+.wv-btn-arrow {
+    font-size:  1.15rem;
+    line-height: 1;
+    transition: transform 200ms var(--ease-out);
+}
+.wv-begin-btn:hover .wv-btn-arrow { transform: translateX(5px); }
+
+/* Keyboard hint */
+.wv-hint {
+    font-family: var(--font-mono);
+    font-size:   0.58rem;
+    font-weight: 500;
+    color:       var(--text-muted);
+    letter-spacing: 0.05em;
+}
+
+.wv-hint kbd {
+    font-family:   var(--font-mono);
+    font-size:     0.56rem;
+    font-weight:   600;
+    color:         var(--text-body);
+    background:    var(--bg-elevated);
+    border:        1px solid var(--border-default);
+    border-bottom: 2px solid var(--border-strong);
+    border-radius: 3px;
+    padding:       1px 5px;
+}
+
+
+/* ─────────────────────────────────────────────────────────────
+   20-M. FOOTER
+───────────────────────────────────────────────────────────── */
+.wv-foot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 12px 24px 18px;
+    font-family:    var(--font-mono);
+    font-size:      0.57rem;
+    font-weight:    500;
+    color:          var(--text-muted);
+    letter-spacing: 0.08em;
+    position: relative;
+    z-index: 4;
+    flex-shrink: 0;
+}
+
+.wv-mid-dot { opacity: 0.35; }
+
+.wv-ver  { color: var(--brand-primary); opacity: 0.7; }
+.wv-free { color: var(--success);       opacity: 0.7; }
+
+.wv-link {
+    color: var(--text-body);
+    text-decoration: none;
+    border-bottom: 1px solid var(--border-subtle);
+    transition: color var(--t-fast) ease, border-color var(--t-fast) ease;
+}
+.wv-link:hover {
+    color: var(--brand-primary);
+    border-color: var(--brand-primary);
+}
+
+
+/* ─────────────────────────────────────────────────────────────
+   20-N. RESPONSIVE
+───────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+    /* On tablet the welcome overlays the vertical stack layout */
+    #welcomeView {
+        position: fixed; /* cover the full viewport stacked layout */
+    }
+}
+
+@media (max-width: 640px) {
+    .wv-main { padding: 36px 22px 20px; }
+
+    .wv-brand { gap: 12px; }
+    .wv-bolt  { font-size: 2.2rem; }
+    .wv-n1, .wv-n2, .wv-n3 { font-size: 2.4rem; }
+
+    .wv-tagline { font-size: 0.86rem; }
+
+    .wv-code { max-width: 100%; }
+    .wv-code-pre { font-size: 0.64rem; padding: 11px 13px; }
+
+    .wv-begin-btn { padding: 13px 36px !important; font-size: 0.96rem !important; }
+
+    .wv-ticker { display: none; }
+    .wv-eyebrow { font-size: 0.56rem; }
+
+    .wv-corner { width: 15px; height: 15px; }
+    .wv-corner--tl { top: 16px; left: 16px; }
+    .wv-corner--tr { top: 16px; right: 16px; }
+    .wv-corner--bl { bottom: 16px; left: 16px; }
+    .wv-corner--br { bottom: 16px; right: 16px; }
+}
+
+@media (max-width: 400px) {
+    .wv-pills { gap: 6px; }
+    .wv-pill  { font-size: 0.56rem; padding: 4px 10px; }
+}
+
+
+/* ─────────────────────────────────────────────────────────────
+   20-O. LIGHT MODE
+───────────────────────────────────────────────────────────── */
+.light-mode #welcomeView  { background: var(--bg-void); }
+.light-mode .wv-dots      { background-image: radial-gradient(rgba(0,0,0,0.04) 1px, transparent 1px); }
+.light-mode .wv-code      { background: var(--bg-elevated); border-color: var(--border-default); }
+.light-mode .wv-code-bar  { background: var(--bg-surface); }
+
+
+/* ─────────────────────────────────────────────────────────────
+   20-P. REDUCED MOTION
+───────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    .wv-anim {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+    }
+    #welcomeView.wv-leaving {
+        animation: none !important;
+        opacity: 0;
+    }
+    .wv-ticker-track { animation: none; }
+    .wv-bolt         { animation: none; }
+    .wv-pulse-dot    { animation: none; }
+    .wv-code-caption-dot { animation: none; }
+}
