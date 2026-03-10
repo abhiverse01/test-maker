@@ -23,6 +23,7 @@
 
 import { Store } from './modules/store.js';
 import { Timer  } from './modules/timer.js';
+import { renderWelcome, initWelcomeListeners } from './modules/welcome.js';
 
 
 /* ═══════════════════════════════════════════════════════
@@ -34,7 +35,6 @@ import { Timer  } from './modules/timer.js';
   const style = document.createElement('style');
   style.id = 'runtime-styles';
   style.textContent = /* css */`
-
 
     /* ─────────────────────────────────────────────────
        QUESTION TEXT TRANSITIONS
@@ -278,6 +278,7 @@ const DOM = {
   app:              $('app'),
   testView:         $('testView'),
   resultView:       $('resultView'),
+  welcomeView:      $('welcomeView'),   // ← welcome screen overlay
 
   // Question area
   questionLabel:    $('questionLabel'),
@@ -1079,22 +1080,29 @@ async function init() {
     initListeners();
 
     if (resumed) {
-      // Paint the timer display immediately (before the interval fires)
+      // ── Session resume: skip welcome, jump straight into the test ──
+      if (DOM.welcomeView) DOM.welcomeView.classList.add('hidden');
       if (DOM.timerDisplay) {
         DOM.timerDisplay.textContent = Utils.formatTime(Store.state.timeElapsed || 0);
       }
       timer.start(Store.state.timeElapsed || 0);
       if (DOM.subTitle) DOM.subTitle.textContent = '↩ Session Resumed';
+      renderUI(Store.state);
     } else {
-      Store.dispatch('START_NEW_TEST');
-      timer.start(0);
-      if (DOM.subTitle) {
-        DOM.subTitle.textContent = `${Store.state.testSize} Questions · Ready`;
-      }
-    }
+      // ── Fresh load: render welcome, start test when dismissed ──
+      Store.dispatch('START_NEW_TEST');          // pre-render test silently behind welcome
+      renderUI(Store.state);                     // test is ready but hidden under welcome
 
-    // Initial render
-    renderUI(Store.state);
+      const beginTest = () => {
+        timer.start(0);
+        if (DOM.subTitle) {
+          DOM.subTitle.textContent = `${Store.state.testSize} Questions · Ready`;
+        }
+      };
+
+      renderWelcome(DOM.welcomeView, data.length);
+      initWelcomeListeners(DOM.welcomeView, beginTest);
+    }
 
   } catch (err) {
     console.error('[Init] Fatal error:', err);
