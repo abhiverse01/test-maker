@@ -1684,3 +1684,89 @@ footer {
     .wv-pulse-dot    { animation: none; }
     .wv-code-caption-dot { animation: none; }
 }
+
+
+
+/* ============================================================
+   GODMODE PATCH v4.3 — Micro-Interactions & Polish
+   ============================================================ */
+
+/* ─────────────────────────────────────────────────────────────
+   1. BRAND AWARE SELECTION (Global Polish)
+───────────────────────────────────────────────────────────── */
+::selection {
+    background: rgba(245, 158, 11, 0.25);  /* Amber tint */
+    color: var(--text-heading);
+    text-shadow: none;
+}
+
+/* Light mode adjustment for selection contrast */
+.light-mode ::selection {
+    background: rgba(245, 158, 11, 0.4);
+    color: var(--bg-void);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   2. GODMODE FOCUS STATES (The "Neon Ring")
+   Replaces default outline with a glowing double-ring.
+   Works for buttons, inputs, and interactive grid items.
+───────────────────────────────────────────────────────────── */
+button:focus-visible,
+.q-btn:focus-visible,
+.option-item:focus-visible,
+.dark-toggle:focus-visible,
+.filter-btn:focus-visible {
+    outline: none !important; /* Remove default browser outline */
+    
+    /* 
+       Ring 1: Gap to background (bg-void) 
+       Ring 2: The Brand Color
+       Ring 3: Outer Glow
+    */
+    box-shadow: 
+        0 0 0 2px var(--bg-void), 
+        0 0 0 4px var(--brand-primary),
+        0 0 16px rgba(245, 158, 11, 0.4);
+        
+    z-index: 10; /* Ensure focus ring sits above siblings */
+}
+
+/* Light mode focus glow adjustment */
+.light-mode button:focus-visible,
+.light-mode .q-btn:focus-visible,
+.light-mode .option-item:focus-visible {
+    box-shadow: 
+        0 0 0 2px var(--bg-surface), 
+        0 0 0 4px var(--brand-primary),
+        0 0 12px rgba(245, 158, 11, 0.3);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   3. TOUCH OPTIMIZATION (Mobile Performance)
+   Removes 300ms tap delay on mobile devices.
+───────────────────────────────────────────────────────────── */
+button,
+.q-btn,
+.option-item,
+.dark-toggle,
+.filter-btn {
+    touch-action: manipulation; 
+}
+
+/* ─────────────────────────────────────────────────────────────
+   4. PREMIUM SCROLL SNAPPING (Results List)
+   Makes questions magnetically snap into view when scrolling.
+───────────────────────────────────────────────────────────── */
+.results-list {
+    scroll-snap-type: y mandatory;
+}
+
+.result-item {
+    scroll-snap-align: start; /* Snap the top of the item to the top of viewport */
+    scroll-margin-top: var(--sp-4); /* Add a little breathing room at the top */
+}
+
+/* Optional: Make the question content snap too for a "slide" feel */
+.question-box {
+    scroll-snap-type: y proximity;
+}
