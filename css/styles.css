@@ -1,15 +1,43 @@
 /* ============================================================
-   TEST-MAKER ENGINE — GODMODE CSS v4.0
-   Aesthetic: Precision Terminal · Dark-First · Amber Command
-   Fonts: Syne (Display) · DM Sans (Body) · JetBrains Mono
+   TEST-MAKER ENGINE — GODMODE CSS v4.1
+   Fixes:
+     • Missing variable aliases (--brand, --text-display, --bg-panel,
+       --glow-brand, --amber-hot/warm, --success-text, --error-text,
+       --brand-rgb, --sp-10) that runtime CSS + JS reference
+     • Question text hidden — explicit visibility/display rules,
+       question-text-wrap flex fix, z-index isolation
+     • Timer urgency — .timer-box.urgent .timer selector (JS adds
+       .urgent to .timer-box, CSS was only targeting .timer.warning)
+     • Sidebar overflow — 10-column grid, 310px width fits 50
+       questions in 5 rows with no scrollbar
+     • result-question class conflict — runtime CSS redefines it
+       as flex; static CSS now aligns consistently
+   Enhancements:
+     • Richer ambient background with animated grain texture
+     • Header: logo glow depth, subtitle badge, timer urgency aura
+     • Options: scale press feedback, sharper left-rail accent,
+       key prefix glow on select, stagger enter animation
+     • Palette: hover scan-line, answered pulse, current ring
+     • Progress bar: glow trail, animated shimmer fix
+     • Results: score gradient ring slot, stat pill hover lifts,
+       filter btn count badges, result item stagger delay spread
+     • Buttons: inset highlight on all states, active press depth
+     • Scrollbar: brand-colored thumb with smooth fade
+     • Light mode: recalibrated shadows + surface contrasts
+     • Reduced-motion: respects all new animations
    ============================================================ */
 
-/* --- 1. GOOGLE FONTS IMPORT --- */
+/* ─────────────────────────────────────────────────────────────
+   1. GOOGLE FONTS
+───────────────────────────────────────────────────────────── */
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
-/* --- 2. DESIGN TOKENS --- */
+
+/* ─────────────────────────────────────────────────────────────
+   2. DESIGN TOKENS
+───────────────────────────────────────────────────────────── */
 :root {
-    /* ── Base Palette ────────────────────────────────────── */
+    /* ── Base Palette ─────────────────────────────────────── */
     --bg-void:      #07090f;
     --bg-base:      #0c1018;
     --bg-surface:   #111827;
@@ -17,40 +45,54 @@
     --bg-overlay:   #1e2d42;
     --bg-glass:     rgba(17, 24, 39, 0.75);
 
-    /* ── Text ────────────────────────────────────────────── */
-    --text-heading: #eef2f7;
-    --text-body:    #8b9ab3;
-    --text-muted:   #4a5568;
-    --text-faint:   #2d3748;
+    /* ── Alias used by runtime JS CSS ── */
+    --bg-panel:     #1a2333;   /* = --bg-elevated */
 
-    /* ── Brand: Amber Command ────────────────────────────── */
-    --brand-primary:   #f59e0b;
-    --brand-secondary: #fbbf24;
-    --brand-tertiary:  #fde68a;
-    --brand-gradient:  linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-    --brand-glow:      0 0 40px -8px rgba(245, 158, 11, 0.35);
-    --brand-glow-sm:   0 0 20px -5px rgba(245, 158, 11, 0.25);
+    /* ── Text ─────────────────────────────────────────────── */
+    --text-heading:  #eef2f7;
+    --text-display:  #eef2f7;  /* alias for runtime CSS */
+    --text-body:     #8b9ab3;
+    --text-muted:    #4a5568;
+    --text-faint:    #2d3748;
 
-    /* ── Accent: Cyan ────────────────────────────────────── */
+    /* ── Brand: Amber Command ─────────────────────────────── */
+    --brand:            #f59e0b;   /* short alias for runtime CSS */
+    --brand-primary:    #f59e0b;
+    --brand-secondary:  #fbbf24;
+    --brand-tertiary:   #fde68a;
+    --brand-gradient:   linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    --brand-glow:       0 0 40px -8px rgba(245, 158, 11, 0.35);
+    --brand-glow-sm:    0 0 20px -5px rgba(245, 158, 11, 0.25);
+    --glow-brand:       0 0 40px -8px rgba(245, 158, 11, 0.35); /* alias */
+    --brand-rgb:        245, 158, 11; /* for rgba() usage in runtime CSS */
+
+    /* ── Amber warmth variants (runtime CSS modals) ───────── */
+    --amber-hot:    #f59e0b;
+    --amber-warm:   #d97706;
+
+    /* ── Accent: Cyan ─────────────────────────────────────── */
     --accent:          #06b6d4;
     --accent-surface:  rgba(6, 182, 212, 0.08);
     --accent-border:   rgba(6, 182, 212, 0.2);
 
-    /* ── Semantic ────────────────────────────────────────── */
+    /* ── Semantic ─────────────────────────────────────────── */
     --success:         #10b981;
     --success-surface: rgba(16, 185, 129, 0.08);
     --success-border:  rgba(16, 185, 129, 0.25);
+    --success-text:    #34d399;  /* runtime CSS result icons */
+
     --error:           #ef4444;
     --error-surface:   rgba(239, 68, 68, 0.08);
     --error-border:    rgba(239, 68, 68, 0.25);
+    --error-text:      #f87171;  /* runtime CSS result icons */
 
-    /* ── Borders ─────────────────────────────────────────── */
+    /* ── Borders ──────────────────────────────────────────── */
     --border-faint:    rgba(255, 255, 255, 0.04);
     --border-subtle:   rgba(255, 255, 255, 0.07);
     --border-default:  rgba(255, 255, 255, 0.1);
     --border-strong:   rgba(255, 255, 255, 0.18);
 
-    /* ── Shadows ─────────────────────────────────────────── */
+    /* ── Shadows ──────────────────────────────────────────── */
     --shadow-xs:    0 1px 3px rgba(0, 0, 0, 0.4);
     --shadow-sm:    0 2px 8px rgba(0, 0, 0, 0.4);
     --shadow-md:    0 8px 24px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -58,26 +100,24 @@
     --shadow-xl:    0 40px 80px rgba(0, 0, 0, 0.6);
     --shadow-inset: inset 0 1px 0 rgba(255,255,255,0.04), inset 0 -1px 0 rgba(0,0,0,0.2);
 
-    /* ── Spacing ─────────────────────────────────────────── */
-    --sp-1: 0.25rem;  --sp-2: 0.5rem;   --sp-3: 0.75rem;
-    --sp-4: 1rem;     --sp-5: 1.25rem;  --sp-6: 1.5rem;
-    --sp-8: 2rem;     --sp-10: 2.5rem;  --sp-12: 3rem;
+    /* ── Spacing ──────────────────────────────────────────── */
+    --sp-1:  0.25rem;  --sp-2:  0.5rem;   --sp-3:  0.75rem;
+    --sp-4:  1rem;     --sp-5:  1.25rem;  --sp-6:  1.5rem;
+    --sp-8:  2rem;     --sp-10: 2.5rem;   --sp-12: 3rem;
 
-    /* ── Geometry ────────────────────────────────────────── */
-    --r-xs:   0.25rem;
-    --r-sm:   0.375rem;
-    --r-md:   0.5rem;
-    --r-lg:   0.75rem;
-    --r-xl:   1rem;
-    --r-2xl:  1.5rem;
+    /* ── Geometry ─────────────────────────────────────────── */
+    --r-xs:   0.25rem;   --r-sm:   0.375rem;
+    --r-md:   0.5rem;    --r-lg:   0.75rem;
+    --r-xl:   1rem;      --r-2xl:  1.5rem;
     --r-full: 9999px;
 
-    /* ── Typography ──────────────────────────────────────── */
+    /* ── Typography ───────────────────────────────────────── */
     --font-display: 'Syne', system-ui, sans-serif;
     --font-body:    'DM Sans', system-ui, sans-serif;
+    --font-ui:      'DM Sans', system-ui, sans-serif; /* runtime CSS alias */
     --font-mono:    'JetBrains Mono', monospace;
 
-    /* ── Motion ──────────────────────────────────────────── */
+    /* ── Motion ───────────────────────────────────────────── */
     --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
     --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
     --ease-snappy: cubic-bezier(0.4, 0, 0.2, 1);
@@ -85,14 +125,12 @@
     --t-normal: 220ms;
     --t-slow:   380ms;
 
-    /* ── Sidebar ─────────────────────────────────────────── */
-    --sidebar-w: 230px;
-
-    /* ── Header height ───────────────────────────────────── */
-    --header-h: 60px;
+    /* ── Layout ───────────────────────────────────────────── */
+    --sidebar-w: 310px;  /* Widened: fits 10×5 grid = 50q with no scroll */
+    --header-h:  60px;
 }
 
-/* Light Mode Override */
+/* ── Light Mode Override ─────────────────────────────────── */
 .light-mode {
     --bg-void:      #f1f5f9;
     --bg-base:      #f8fafc;
@@ -100,16 +138,24 @@
     --bg-elevated:  #f1f5f9;
     --bg-overlay:   #e8edf4;
     --bg-glass:     rgba(255, 255, 255, 0.8);
+    --bg-panel:     #f1f5f9;
 
-    --text-heading: #0f172a;
-    --text-body:    #475569;
-    --text-muted:   #94a3b8;
-    --text-faint:   #cbd5e1;
+    --text-heading:  #0f172a;
+    --text-display:  #0f172a;
+    --text-body:     #475569;
+    --text-muted:    #94a3b8;
+    --text-faint:    #cbd5e1;
 
-    --brand-primary:   #d97706;
-    --brand-secondary: #f59e0b;
-    --brand-glow:      0 0 30px -8px rgba(217, 119, 6, 0.2);
-    --brand-glow-sm:   0 0 15px -5px rgba(217, 119, 6, 0.15);
+    --brand:            #d97706;
+    --brand-primary:    #d97706;
+    --brand-secondary:  #f59e0b;
+    --brand-gradient:   linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    --brand-glow:       0 0 30px -8px rgba(217, 119, 6, 0.2);
+    --brand-glow-sm:    0 0 15px -5px rgba(217, 119, 6, 0.15);
+    --glow-brand:       0 0 30px -8px rgba(217, 119, 6, 0.2);
+    --brand-rgb:        217, 119, 6;
+    --amber-hot:    #f59e0b;
+    --amber-warm:   #d97706;
 
     --accent:         #0891b2;
     --accent-surface: rgba(8, 145, 178, 0.06);
@@ -129,9 +175,13 @@
 
     --success-surface: rgba(16, 185, 129, 0.06);
     --success-border:  rgba(16, 185, 129, 0.2);
+    --success-text:    #059669;
+
     --error-surface:   rgba(239, 68, 68, 0.06);
     --error-border:    rgba(239, 68, 68, 0.2);
+    --error-text:      #dc2626;
 }
+
 
 /* ─────────────────────────────────────────────────────────────
    3. RESET & BASE
@@ -163,36 +213,51 @@ body {
     position: relative;
 }
 
-/* Ambient background — gradient blobs + grid */
+/* ── Ambient background: gradient blobs + subtle dot-grid ─ */
 body::before {
     content: '';
     position: fixed;
     inset: 0;
     background-image:
-        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(245, 158, 11, 0.04) 0%, transparent 60%),
+        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(245, 158, 11, 0.05) 0%, transparent 60%),
         radial-gradient(ellipse 60% 50% at 80% 90%, rgba(6, 182, 212, 0.04) 0%, transparent 60%),
-        repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255,255,255,0.015) 40px),
-        repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(255,255,255,0.015) 40px);
+        radial-gradient(ellipse 50% 40% at 50% 50%, rgba(245, 158, 11, 0.02) 0%, transparent 70%),
+        repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255,255,255,0.012) 40px),
+        repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(255,255,255,0.012) 40px);
     z-index: -1;
     pointer-events: none;
+}
+
+/* Dot overlay for extra depth */
+body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px);
+    background-size: 24px 24px;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.3;
 }
 
 .light-mode body::before {
     background-image:
         radial-gradient(ellipse 80% 60% at 20% 10%, rgba(245, 158, 11, 0.06) 0%, transparent 60%),
         radial-gradient(ellipse 60% 50% at 80% 90%, rgba(6, 182, 212, 0.06) 0%, transparent 60%),
-        repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(0,0,0,0.02) 40px),
-        repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(0,0,0,0.02) 40px);
+        repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(0,0,0,0.018) 40px),
+        repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(0,0,0,0.018) 40px);
 }
+.light-mode body::after { opacity: 0.12; background-image: radial-gradient(rgba(0,0,0,0.06) 1px, transparent 1px); }
+
 
 /* ─────────────────────────────────────────────────────────────
    4. APP CONTAINER
 ───────────────────────────────────────────────────────────── */
 .app-container {
     width: 100%;
-    max-width: 1300px;
+    max-width: 1360px;
     height: 96vh;
-    max-height: 920px;
+    max-height: 930px;
     background: var(--bg-surface);
     border-radius: var(--r-2xl);
     box-shadow: var(--shadow-xl), var(--brand-glow);
@@ -201,10 +266,10 @@ body::before {
     flex-direction: column;
     overflow: hidden;
     position: relative;
-    animation: appMount 0.6s var(--ease-out) both;
+    animation: appMount 0.55s var(--ease-out) both;
 }
 
-/* Amber accent line at top */
+/* Amber top accent bar */
 .app-container::before {
     content: '';
     position: absolute;
@@ -213,12 +278,14 @@ body::before {
     background: var(--brand-gradient);
     z-index: 200;
     border-radius: var(--r-2xl) var(--r-2xl) 0 0;
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.6);
 }
 
 @keyframes appMount {
-    from { opacity: 0; transform: translateY(16px) scale(0.985); }
-    to   { opacity: 1; transform: translateY(0) scale(1); }
+    from { opacity: 0; transform: translateY(18px) scale(0.982); }
+    to   { opacity: 1; transform: translateY(0)    scale(1); }
 }
+
 
 /* ─────────────────────────────────────────────────────────────
    5. HEADER
@@ -235,6 +302,16 @@ body::before {
     z-index: 100;
     position: relative;
     flex-shrink: 0;
+}
+
+/* Subtle bottom glow line on header */
+.header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, rgba(245,158,11,0.15) 30%, rgba(245,158,11,0.15) 70%, transparent 100%);
+    pointer-events: none;
 }
 
 .title {
@@ -258,13 +335,13 @@ body::before {
 .title h1::before {
     content: '⚡';
     font-size: 1rem;
-    filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.8));
+    filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.9));
     animation: boltPulse 3s ease-in-out infinite;
 }
 
 @keyframes boltPulse {
-    0%, 100% { filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.8)); }
-    50%       { filter: drop-shadow(0 0 14px rgba(245, 158, 11, 1)); }
+    0%, 100% { filter: drop-shadow(0 0 6px  rgba(245, 158, 11, 0.8)); }
+    50%       { filter: drop-shadow(0 0 16px rgba(245, 158, 11, 1.0)); }
 }
 
 .title::after {
@@ -277,11 +354,16 @@ body::before {
 }
 
 #subTitle {
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     font-weight: 500;
     color: var(--text-muted);
-    letter-spacing: 0.02em;
+    letter-spacing: 0.03em;
     font-family: var(--font-mono);
+    /* Subtle badge treatment */
+    background: var(--bg-elevated);
+    padding: 2px 8px;
+    border-radius: var(--r-full);
+    border: 1px solid var(--border-faint);
 }
 
 .badge-panel {
@@ -290,7 +372,7 @@ body::before {
     gap: var(--sp-3);
 }
 
-/* Timer */
+/* ── Timer ─────────────────────────────────────────────────── */
 .timer-box {
     display: flex;
     flex-direction: column;
@@ -303,6 +385,7 @@ body::before {
     box-shadow: var(--shadow-inset), var(--shadow-xs);
     position: relative;
     overflow: hidden;
+    transition: border-color var(--t-normal) ease, box-shadow var(--t-normal) ease;
 }
 
 .timer-box::before {
@@ -313,11 +396,23 @@ body::before {
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
 }
 
+/* ── URGENCY FIX: JS adds .urgent to .timer-box ─────────── */
+.timer-box.urgent {
+    border-color: rgba(239, 68, 68, 0.4);
+    box-shadow: var(--shadow-inset), 0 0 14px -3px rgba(239, 68, 68, 0.3);
+    animation: urgentPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes urgentPulse {
+    0%, 100% { box-shadow: var(--shadow-inset), 0 0 10px -3px rgba(239,68,68,0.25); }
+    50%       { box-shadow: var(--shadow-inset), 0 0 20px -3px rgba(239,68,68,0.5); }
+}
+
 .timer-label {
     font-family: var(--font-mono);
-    font-size: 0.55rem;
+    font-size: 0.52rem;
     font-weight: 600;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.14em;
     color: var(--text-muted);
     text-transform: uppercase;
     line-height: 1;
@@ -330,14 +425,21 @@ body::before {
     font-weight: 600;
     color: var(--brand-primary);
     line-height: 1.2;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.06em;
     text-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
-    transition: color var(--t-normal) ease;
+    transition: color var(--t-normal) ease, text-shadow var(--t-normal) ease;
+    /* Tabular nums so digits don't jump width */
+    font-variant-numeric: tabular-nums;
 }
 
-.timer.warning { color: var(--error); text-shadow: 0 0 12px rgba(239, 68, 68, 0.5); }
+/* Urgent state on timer text (JS adds .urgent to parent .timer-box) */
+.timer-box.urgent .timer,
+.timer.warning {
+    color: var(--error);
+    text-shadow: 0 0 12px rgba(239, 68, 68, 0.5);
+}
 
-/* Dark/Light Toggle */
+/* ── Dark / Light Toggle ─────────────────────────────────── */
 .dark-toggle {
     position: relative;
     width: 36px;
@@ -356,9 +458,12 @@ body::before {
 
 .dark-toggle:hover {
     border-color: var(--brand-primary);
-    box-shadow: var(--shadow-inset), 0 0 0 1px rgba(245,158,11,0.15);
-    transform: scale(1.05);
+    box-shadow: var(--shadow-inset), 0 0 0 1px rgba(245,158,11,0.2),
+                0 0 12px rgba(245,158,11,0.15);
+    transform: scale(1.06);
 }
+
+.dark-toggle:active { transform: scale(0.96); }
 
 .dark-toggle span {
     position: absolute;
@@ -367,10 +472,12 @@ body::before {
     line-height: 1;
 }
 
-.dark-toggle .icon-sun  { opacity: 1;  transform: scale(1) rotate(0deg); }
+.dark-toggle .icon-sun  { opacity: 1;  transform: scale(1)   rotate(0deg); }
 .dark-toggle .icon-moon { opacity: 0;  transform: scale(0.4) rotate(-90deg); }
+
 .light-mode .dark-toggle .icon-sun  { opacity: 0;  transform: scale(0.4) rotate(90deg); }
-.light-mode .dark-toggle .icon-moon { opacity: 1;  transform: scale(1) rotate(0deg); }
+.light-mode .dark-toggle .icon-moon { opacity: 1;  transform: scale(1)   rotate(0deg); }
+
 
 /* ─────────────────────────────────────────────────────────────
    6. MAIN CARD
@@ -383,8 +490,10 @@ body::before {
     min-height: 0;
 }
 
+
 /* ─────────────────────────────────────────────────────────────
    7. SIDEBAR — QUESTION PALETTE
+   310px wide, 10-column grid → 50 questions = 5 rows, no scroll
 ───────────────────────────────────────────────────────────── */
 .question-palette {
     width: var(--sidebar-w);
@@ -393,8 +502,8 @@ body::before {
     border-right: 1px solid var(--border-subtle);
     display: flex;
     flex-direction: column;
-    padding: var(--sp-5);
-    overflow-y: auto;
+    padding: var(--sp-4) var(--sp-4) var(--sp-4);
+    overflow: hidden;  /* No scroll — grid fits all 50 */
     position: relative;
 }
 
@@ -404,46 +513,56 @@ body::before {
     top: 0; left: 0; right: 0;
     height: 1px;
     background: linear-gradient(90deg, var(--brand-primary), transparent);
-    opacity: 0.4;
+    opacity: 0.45;
+}
+
+/* Vertical brand strip */
+.question-palette::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0; right: 0;
+    width: 1px;
+    background: linear-gradient(180deg, rgba(245,158,11,0.15), transparent 60%);
+    pointer-events: none;
 }
 
 .palette-header {
-    margin-bottom: var(--sp-4);
-    padding-bottom: var(--sp-3);
+    margin-bottom: var(--sp-3);
+    padding-bottom: var(--sp-2);
     border-bottom: 1px solid var(--border-faint);
+    flex-shrink: 0;
 }
 
 .palette-title {
     font-family: var(--font-display);
-    font-size: 0.68rem;
+    font-size: 0.65rem;
     font-weight: 700;
     color: var(--text-muted);
     text-transform: uppercase;
-    letter-spacing: 0.12em;
-    margin-bottom: var(--sp-3);
+    letter-spacing: 0.14em;
+    margin-bottom: var(--sp-2);
     display: block;
 }
 
 .palette-legend {
     display: flex;
-    flex-direction: column;
-    gap: var(--sp-1);
+    gap: var(--sp-3);
 }
 
 .legend-item {
-    font-size: 0.65rem;
+    font-size: 0.62rem;
     font-weight: 500;
     color: var(--text-muted);
     display: flex;
     align-items: center;
-    gap: var(--sp-2);
+    gap: 5px;
     line-height: 1.3;
 }
 
 .legend-item::before {
     content: '';
-    width: 8px;
-    height: 8px;
+    width: 7px;
+    height: 7px;
     border-radius: var(--r-xs);
     border: 1px solid var(--border-default);
     background: var(--bg-elevated);
@@ -453,10 +572,10 @@ body::before {
 .legend-item.answered::before {
     background: var(--success);
     border-color: var(--success);
-    box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+    box-shadow: 0 0 5px rgba(16, 185, 129, 0.5);
 }
 
-/* Progress summary */
+/* ── Progress summary bar ─────────────────────────────────── */
 .palette-progress {
     background: var(--bg-elevated);
     border: 1px solid var(--border-faint);
@@ -466,36 +585,85 @@ body::before {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Filled progress stripe behind palette-progress */
+.palette-progress::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    width: var(--palette-pct, 0%);
+    background: linear-gradient(90deg, rgba(16,185,129,0.06), transparent);
+    transition: width 400ms var(--ease-out);
+    pointer-events: none;
+}
+
+/* We drive this via JS: paletteFill.style.width = pct + '%'
+   But for the palette-progress stripe we re-use that signal */
+.palette-progress-bar {
+    position: absolute;
+    inset: 0;
+    background: rgba(16,185,129,0.06);
+    transform-origin: left;
+    transition: transform 400ms var(--ease-out);
+    pointer-events: none;
 }
 
 .palette-progress-label {
-    font-size: 0.62rem;
+    font-size: 0.6rem;
     color: var(--text-muted);
     font-family: var(--font-mono);
+    position: relative;
+    z-index: 1;
 }
 
 .palette-progress-count {
-    font-size: 0.75rem;
-    font-weight: 600;
+    font-size: 0.72rem;
+    font-weight: 700;
     font-family: var(--font-mono);
     color: var(--success);
+    position: relative;
+    z-index: 1;
 }
 
-/* Grid of question buttons */
+/* Mini progress fill track (already in HTML as #paletteFill) */
+.palette-fill-track {
+    height: 2px;
+    background: var(--bg-overlay);
+    border-radius: var(--r-full);
+    overflow: hidden;
+    margin-top: var(--sp-1);
+    flex-shrink: 0;
+}
+
+.palette-fill-track .palette-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--success), var(--brand-primary));
+    border-radius: var(--r-full);
+    transition: width 400ms var(--ease-out);
+    box-shadow: 0 0 6px rgba(16,185,129,0.4);
+}
+
+/* ── Question button grid ────────────────────────────────── */
+/* 10 columns × 5 rows = 50 questions, no scrollbar needed */
 .grid-buttons {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 5px;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 4px;
+    flex-shrink: 0;
 }
 
 .q-btn {
     aspect-ratio: 1;
-    border-radius: var(--r-sm);
+    border-radius: 5px;
     border: 1px solid var(--border-faint);
     background: var(--bg-elevated);
     color: var(--text-muted);
     font-family: var(--font-mono);
-    font-size: 0.65rem;
+    font-size: 0.58rem;
     font-weight: 600;
     cursor: pointer;
     transition: all var(--t-fast) var(--ease-out);
@@ -504,30 +672,51 @@ body::before {
     align-items: center;
     justify-content: center;
     box-shadow: var(--shadow-inset);
+    /* Prevent text selection on rapid clicks */
+    user-select: none;
+    -webkit-user-select: none;
+    /* Tabular nums */
+    font-variant-numeric: tabular-nums;
 }
 
 .q-btn:hover {
     border-color: var(--brand-primary);
     color: var(--brand-primary);
-    background: rgba(245, 158, 11, 0.06);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-xs), 0 0 0 1px rgba(245,158,11,0.1);
+    background: rgba(245, 158, 11, 0.08);
+    transform: translateY(-1px) scale(1.06);
+    box-shadow: var(--shadow-xs), 0 0 0 1px rgba(245,158,11,0.15);
+    z-index: 2;
 }
+
+.q-btn:active { transform: scale(0.95) translateY(0); }
 
 .q-btn.answered {
     background: var(--success-surface);
     border-color: var(--success-border);
     color: var(--success);
-    box-shadow: var(--shadow-inset), 0 0 8px -2px rgba(16, 185, 129, 0.2);
+    box-shadow: var(--shadow-inset), 0 0 6px -2px rgba(16, 185, 129, 0.25);
+}
+
+.q-btn.answered::after {
+    content: '';
+    position: absolute;
+    bottom: 2px; right: 2px;
+    width: 3px; height: 3px;
+    border-radius: 50%;
+    background: var(--success);
+    opacity: 0.8;
 }
 
 .q-btn.current {
     background: var(--brand-primary);
     color: var(--bg-void);
     border-color: transparent;
-    box-shadow: 0 0 0 2px var(--bg-base), 0 0 0 3px var(--brand-primary), var(--brand-glow-sm);
-    transform: scale(1.08);
-    z-index: 2;
+    box-shadow:
+        0 0 0 2px var(--bg-base),
+        0 0 0 3px var(--brand-primary),
+        var(--brand-glow-sm);
+    transform: scale(1.1);
+    z-index: 3;
     font-weight: 700;
 }
 
@@ -537,10 +726,15 @@ body::before {
     color: var(--bg-void);
 }
 
+/* Focus ring for keyboard nav */
+.q-btn:focus-visible {
+    outline: 2px solid var(--brand-primary);
+    outline-offset: 2px;
+}
+
+
 /* ─────────────────────────────────────────────────────────────
    8. CONTENT PANE
-   NOTE: In HTML, wrap .progress-area + .question-box + .action-bar
-   + .secondary-actions inside <div class="content-pane">
 ───────────────────────────────────────────────────────────── */
 .content-pane {
     flex: 1;
@@ -549,6 +743,7 @@ body::before {
     overflow: hidden;
     min-width: 0;
 }
+
 
 /* ─────────────────────────────────────────────────────────────
    9. PROGRESS AREA
@@ -565,25 +760,28 @@ body::before {
 
 .question-counter {
     font-family: var(--font-mono);
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     font-weight: 600;
     color: var(--text-heading);
     background: var(--bg-elevated);
-    padding: var(--sp-1) var(--sp-3);
+    padding: 3px var(--sp-3);
     border-radius: var(--r-md);
     border: 1px solid var(--border-subtle);
-    letter-spacing: 0.04em;
+    letter-spacing: 0.05em;
     white-space: nowrap;
     box-shadow: var(--shadow-inset);
+    font-variant-numeric: tabular-nums;
 }
 
 .progress-bar-container {
     flex: 1;
-    height: 3px;
+    height: 4px;
     background: var(--bg-elevated);
     border-radius: var(--r-full);
     overflow: hidden;
     position: relative;
+    /* Outer glow track */
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
 }
 
 .progress-fill {
@@ -592,45 +790,53 @@ body::before {
     border-radius: var(--r-full);
     transition: width 400ms var(--ease-out);
     position: relative;
-    box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.55);
 }
 
+/* Shimmer on progress fill */
 .progress-fill::after {
     content: '';
     position: absolute;
-    top: 0; right: -20px;
-    width: 20px; height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
-    animation: shimmer 2s ease-in-out infinite;
+    top: 0; left: -40px;
+    width: 40px; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent);
+    animation: progressShimmer 2.4s ease-in-out infinite;
 }
 
-@keyframes shimmer {
-    0%   { transform: translateX(-20px); opacity: 0; }
-    50%  { opacity: 1; }
-    100% { transform: translateX(0px); opacity: 0; }
+@keyframes progressShimmer {
+    0%   { transform: translateX(0);   opacity: 0; }
+    30%  { opacity: 1; }
+    70%  { opacity: 1; }
+    100% { transform: translateX(calc(var(--progress-w, 200px) + 40px)); opacity: 0; }
 }
 
 .progress-pct {
     font-family: var(--font-mono);
-    font-size: 0.65rem;
+    font-size: 0.62rem;
     font-weight: 600;
     color: var(--brand-primary);
     white-space: nowrap;
-    min-width: 32px;
+    min-width: 34px;
     text-align: right;
+    font-variant-numeric: tabular-nums;
 }
 
+
 /* ─────────────────────────────────────────────────────────────
-   10. QUESTION BOX (scrollable center stage)
+   10. QUESTION BOX — scrollable center stage
+   FIX: question text visibility
 ───────────────────────────────────────────────────────────── */
 .question-box {
     flex: 1;
     display: flex;
-    align-items: center;
+    /* Changed from center→flex-start so long questions don't get
+       pushed off-screen; content centered via margin auto below */
+    align-items: flex-start;
     justify-content: center;
-    padding: var(--sp-8);
+    padding: var(--sp-8) var(--sp-8) var(--sp-6);
     overflow-y: auto;
-    animation: qFadeIn 0.28s var(--ease-out) both;
+    overflow-x: hidden;
+    min-height: 0;
 }
 
 @keyframes qFadeIn {
@@ -643,47 +849,109 @@ body::before {
     max-width: 680px;
     display: flex;
     flex-direction: column;
+    /* Vertically center when content is short */
+    margin: auto;
+    /* Ensure wrapper never collapses */
+    min-height: min-content;
+    animation: qFadeIn 0.28s var(--ease-out) both;
 }
 
-/* Optional: question number tag (inject via JS) */
+/* Optional question number tag */
 .question-tag {
     display: inline-flex;
     align-items: center;
     gap: var(--sp-2);
     font-family: var(--font-mono);
-    font-size: 0.65rem;
+    font-size: 0.63rem;
     font-weight: 600;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.12em;
     color: var(--brand-primary);
     text-transform: uppercase;
-    margin-bottom: var(--sp-4);
+    margin-bottom: var(--sp-3);
+    flex-shrink: 0;
 }
 
 .question-tag::before {
     content: '';
-    width: 3px; height: 14px;
+    width: 3px; height: 13px;
     background: var(--brand-gradient);
     border-radius: var(--r-full);
     box-shadow: 0 0 6px rgba(245,158,11,0.5);
+    flex-shrink: 0;
 }
 
-/* Question text */
+/* ── QUESTION LABEL (injected by JS as #questionLabel) ────── */
+#questionLabel {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    font-family: var(--font-mono);
+    font-size: 0.63rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    color: var(--brand-primary);
+    text-transform: uppercase;
+    margin-bottom: var(--sp-3);
+    flex-shrink: 0;
+}
+
+#questionLabel::before {
+    content: '';
+    width: 3px; height: 13px;
+    background: var(--brand-gradient);
+    border-radius: var(--r-full);
+    box-shadow: 0 0 6px rgba(245,158,11,0.5);
+    flex-shrink: 0;
+}
+
+/* ── QUESTION TEXT — FIX: explicit visibility ─────────────── */
+#questionText,
 .question-text {
+    display: block;             /* never let this collapse */
+    visibility: visible !important;
     font-family: var(--font-display);
-    font-size: 1.2rem;
+    font-size: 1.18rem;
     font-weight: 700;
-    line-height: 1.55;
+    line-height: 1.6;
     color: var(--text-heading);
     margin-bottom: var(--sp-6);
     letter-spacing: -0.01em;
+    min-height: 2.5rem;         /* prevent zero-height during transition */
+    /* Overflow visible so translateY entrance isn't clipped */
+    overflow: visible;
+    position: relative;
+    z-index: 1;
+    /* Default state: fully opaque (safety override for any stuck class) */
+    opacity: 1;
+    transform: none;
+    /* The transition is applied only when runtime CSS doesn't add its classes */
+    transition: opacity 140ms ease, transform 140ms ease;
+    will-change: opacity, transform;
 }
 
-/* Options */
+/* Wrapper injected by JS — must not create a clipping context */
+.question-text-wrap {
+    overflow: visible;
+    position: relative;
+    padding: 2px 0 4px;
+    /* Don't collapse in flex container */
+    flex-shrink: 0;
+    min-height: 3rem;
+}
+
+/* ── OPTIONS ──────────────────────────────────────────────── */
 .options-grid {
     display: flex;
     flex-direction: column;
     gap: var(--sp-3);
 }
+
+/* Stagger entrance for options */
+#optionsContainer .option-item:nth-child(1) { animation-delay:  0ms; }
+#optionsContainer .option-item:nth-child(2) { animation-delay: 40ms; }
+#optionsContainer .option-item:nth-child(3) { animation-delay: 80ms; }
+#optionsContainer .option-item:nth-child(4) { animation-delay:120ms; }
+#optionsContainer .option-item:nth-child(5) { animation-delay:160ms; }
 
 .option-item {
     background: var(--bg-elevated);
@@ -697,46 +965,77 @@ body::before {
     font-size: 0.92rem;
     font-weight: 400;
     color: var(--text-body);
-    transition: all var(--t-normal) var(--ease-out);
+    transition:
+        border-color var(--t-normal) var(--ease-out),
+        background   var(--t-normal) var(--ease-out),
+        color        var(--t-normal) var(--ease-out),
+        transform    var(--t-normal) var(--ease-out),
+        box-shadow   var(--t-normal) var(--ease-out);
     position: relative;
     overflow: hidden;
     box-shadow: var(--shadow-inset), var(--shadow-xs);
     user-select: none;
+    -webkit-user-select: none;
+    animation: optionIn 0.3s var(--ease-out) both;
+}
+
+@keyframes optionIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to   { opacity: 1; transform: translateX(0); }
 }
 
 /* Shine sweep on hover */
-.option-item::after {
+.option-item::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.03) 50%, transparent 60%);
+    background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.025) 50%, transparent 60%);
     transform: translateX(-100%);
-    transition: transform 400ms var(--ease-out);
+    transition: transform 450ms var(--ease-out);
     pointer-events: none;
 }
 
-.option-item:hover::after { transform: translateX(100%); }
+.option-item:hover::before { transform: translateX(100%); }
+
+/* Left-rail accent line */
+.option-item::after {
+    content: '';
+    position: absolute;
+    left: 0; top: 10%; bottom: 10%;
+    width: 0;
+    background: var(--brand-gradient);
+    border-radius: 0 var(--r-xs) var(--r-xs) 0;
+    transition: width var(--t-normal) var(--ease-out);
+}
+
+.option-item:hover::after,
+.option-item.selected::after { width: 3px; }
 
 .option-item:hover {
-    border-color: var(--brand-primary);
+    border-color: rgba(245, 158, 11, 0.5);
     background: rgba(245, 158, 11, 0.06);
     color: var(--text-heading);
-    transform: translateX(5px);
-    box-shadow: var(--shadow-sm), -4px 0 0 0 var(--brand-primary);
+    transform: translateX(6px);
+    box-shadow: var(--shadow-sm), -3px 0 0 0 var(--brand-primary);
 }
+
+.option-item:active { transform: translateX(4px) scale(0.995); }
 
 .option-item.selected {
     background: rgba(245, 158, 11, 0.1);
-    border-color: var(--brand-primary);
+    border-color: rgba(245, 158, 11, 0.6);
     color: var(--text-heading);
-    box-shadow: var(--shadow-sm), -4px 0 0 0 var(--brand-primary), var(--brand-glow-sm);
-    transform: translateX(5px);
+    box-shadow:
+        var(--shadow-sm),
+        -4px 0 0 0 var(--brand-primary),
+        var(--brand-glow-sm);
+    transform: translateX(6px);
 }
 
 /* Key prefix bubble */
 .option-prefix {
-    width: 30px;
-    height: 30px;
+    width: 28px;
+    height: 28px;
     background: var(--bg-surface);
     border: 1px solid var(--border-default);
     border-radius: var(--r-md);
@@ -745,9 +1044,9 @@ body::before {
     justify-content: center;
     font-family: var(--font-mono);
     font-weight: 700;
-    font-size: 0.72rem;
+    font-size: 0.68rem;
     color: var(--text-muted);
-    transition: all var(--t-normal);
+    transition: all var(--t-normal) var(--ease-out);
     flex-shrink: 0;
     box-shadow: var(--shadow-inset);
 }
@@ -755,12 +1054,25 @@ body::before {
 .option-item:hover .option-prefix,
 .option-item.selected .option-prefix {
     background: var(--brand-primary);
-    border-color: var(--brand-primary);
+    border-color: transparent;
     color: var(--bg-void);
-    box-shadow: 0 0 12px rgba(245,158,11,0.35);
+    box-shadow: 0 0 14px rgba(245,158,11,0.4), var(--shadow-xs);
+    transform: scale(1.05);
 }
 
-.option-text { flex: 1; line-height: 1.5; }
+.option-text {
+    flex: 1;
+    line-height: 1.5;
+    /* Prevent text from wrapping awkwardly under the prefix */
+    word-break: break-word;
+}
+
+/* Focus ring for keyboard nav */
+.option-item:focus-visible {
+    outline: 2px solid var(--brand-primary);
+    outline-offset: 2px;
+}
+
 
 /* ─────────────────────────────────────────────────────────────
    11. ACTION BAR
@@ -776,11 +1088,22 @@ body::before {
     gap: var(--sp-3);
 }
 
+/* Subtle top glow line on action bar */
+.action-bar::before {
+    content: '';
+    position: absolute;
+    top: -1px; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03) 40%, transparent);
+    pointer-events: none;
+}
+
 .nav-buttons, .action-group-right {
     display: flex;
     align-items: center;
     gap: var(--sp-2);
 }
+
 
 /* ─────────────────────────────────────────────────────────────
    12. BUTTON SYSTEM
@@ -810,6 +1133,20 @@ button:focus-visible {
     outline-offset: 2px;
 }
 
+/* Ripple surface for all buttons */
+button::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 60%);
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--t-fast);
+}
+button:hover::after { opacity: 1; }
+
+/* ── Nav buttons ────────────────────────────────────────── */
 .btn-nav {
     background: var(--bg-elevated);
     color: var(--text-heading);
@@ -825,14 +1162,19 @@ button:focus-visible {
     box-shadow: var(--shadow-sm);
 }
 
-.btn-nav:active:not(:disabled) { transform: translateY(0); }
-
-.btn-nav:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-    transform: none !important;
+.btn-nav:active:not(:disabled) {
+    transform: translateY(1px);
+    box-shadow: var(--shadow-inset);
 }
 
+.btn-nav:disabled {
+    opacity: 0.28;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none;
+}
+
+/* ── Text (ghost) button ──────────────────────────────── */
 .btn-text {
     background: transparent;
     color: var(--text-muted);
@@ -846,33 +1188,29 @@ button:focus-visible {
     border-color: var(--error-border);
 }
 
+/* ── Primary button ────────────────────────────────────── */
 .btn-primary {
     background: var(--brand-gradient);
     color: var(--bg-void);
     font-weight: 700;
     border-color: transparent;
     padding: var(--sp-2) var(--sp-6);
-    box-shadow: var(--shadow-sm), 0 4px 16px rgba(245, 158, 11, 0.25);
+    box-shadow: var(--shadow-sm), 0 4px 18px rgba(245, 158, 11, 0.3);
     letter-spacing: 0.02em;
-}
-
-.btn-primary::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, transparent 100%);
-    border-radius: inherit;
-    pointer-events: none;
 }
 
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: var(--shadow-md), 0 8px 24px rgba(245, 158, 11, 0.35);
-    filter: brightness(1.05);
+    box-shadow: var(--shadow-md), 0 8px 26px rgba(245, 158, 11, 0.4);
+    filter: brightness(1.06);
 }
 
-.btn-primary:active { transform: translateY(0); }
+.btn-primary:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-xs), 0 2px 10px rgba(245, 158, 11, 0.2);
+}
 
+/* ── Secondary button ──────────────────────────────────── */
 .btn-secondary {
     background: transparent;
     color: var(--text-muted);
@@ -884,9 +1222,10 @@ button:focus-visible {
     color: var(--brand-primary);
     border-color: var(--brand-primary);
     background: rgba(245, 158, 11, 0.05);
-    box-shadow: var(--shadow-inset), 0 0 0 1px rgba(245,158,11,0.1);
+    box-shadow: var(--shadow-inset), 0 0 0 1px rgba(245,158,11,0.12);
 }
 
+/* ── Secondary actions row ─────────────────────────────── */
 .secondary-actions {
     display: flex;
     align-items: center;
@@ -894,7 +1233,9 @@ button:focus-visible {
     padding: var(--sp-3) var(--sp-8) var(--sp-4);
     border-top: 1px dashed var(--border-faint);
     flex-shrink: 0;
+    gap: var(--sp-3);
 }
+
 
 /* ─────────────────────────────────────────────────────────────
    13. RESULTS VIEW
@@ -908,6 +1249,7 @@ button:focus-visible {
     display: flex;
 }
 
+/* ── Results header ───────────────────────────────────── */
 .results-header {
     text-align: center;
     padding: var(--sp-8) var(--sp-8) var(--sp-5);
@@ -918,12 +1260,10 @@ button:focus-visible {
 .results-header::before {
     content: '';
     position: absolute;
-    top: 20px;
-    left: 50%;
+    top: 0; left: 50%;
     transform: translateX(-50%);
-    width: 200px;
-    height: 200px;
-    background: radial-gradient(ellipse, rgba(245,158,11,0.06) 0%, transparent 70%);
+    width: 240px; height: 240px;
+    background: radial-gradient(ellipse, rgba(245,158,11,0.07) 0%, transparent 70%);
     pointer-events: none;
     z-index: 0;
 }
@@ -932,9 +1272,9 @@ button:focus-visible {
 
 .results-header h2 {
     font-family: var(--font-mono);
-    font-size: 0.68rem;
+    font-size: 0.65rem;
     text-transform: uppercase;
-    letter-spacing: 0.15em;
+    letter-spacing: 0.16em;
     color: var(--text-muted);
     margin-bottom: var(--sp-3);
 }
@@ -950,17 +1290,28 @@ button:focus-visible {
     line-height: 1;
     margin-bottom: var(--sp-2);
     letter-spacing: -0.04em;
+    /* Drop-shadow on text-fill requires a workaround */
+    filter: drop-shadow(0 2px 12px rgba(245,158,11,0.25));
+    animation: scoreReveal 0.5s var(--ease-out) both;
+    animation-delay: 100ms;
+}
+
+@keyframes scoreReveal {
+    from { opacity: 0; transform: scale(0.85); }
+    to   { opacity: 1; transform: scale(1); }
 }
 
 .score-message {
     font-size: 0.85rem;
     color: var(--text-body);
-    max-width: 360px;
+    max-width: 380px;
     margin: 0 auto;
     line-height: 1.6;
+    animation: scoreReveal 0.4s var(--ease-out) both;
+    animation-delay: 200ms;
 }
 
-/* Stats row */
+/* ── Stats row ─────────────────────────────────────────── */
 .stats-row {
     display: flex;
     justify-content: center;
@@ -977,64 +1328,81 @@ button:focus-visible {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
+    gap: 3px;
     min-width: 90px;
-    box-shadow: var(--shadow-inset);
+    box-shadow: var(--shadow-inset), var(--shadow-xs);
+    transition: all var(--t-fast) var(--ease-out);
+    animation: staggerIn 0.4s var(--ease-out) both;
+}
+
+.stat-pill:nth-child(1) { animation-delay:  80ms; }
+.stat-pill:nth-child(2) { animation-delay: 150ms; }
+.stat-pill:nth-child(3) { animation-delay: 220ms; }
+
+.stat-pill:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+    border-color: var(--border-default);
 }
 
 .stat-val {
     font-family: var(--font-mono);
-    font-size: 1.2rem;
+    font-size: 1.4rem;
     font-weight: 700;
     color: var(--text-heading);
     line-height: 1;
+    font-variant-numeric: tabular-nums;
 }
 
-.stat-val.correct { color: var(--success); }
-.stat-val.wrong   { color: var(--error); }
+.stat-val.correct { color: var(--success); text-shadow: 0 0 12px rgba(16,185,129,0.3); }
+.stat-val.wrong   { color: var(--error);   text-shadow: 0 0 12px rgba(239,68,68,0.3); }
 
 .stat-label {
-    font-size: 0.6rem;
+    font-size: 0.58rem;
     text-transform: uppercase;
     letter-spacing: 0.1em;
     font-weight: 600;
     color: var(--text-muted);
 }
 
-/* Filters */
+/* ── Filter buttons ─────────────────────────────────────── */
 .result-filters {
     display: flex;
     gap: var(--sp-2);
     padding: 0 var(--sp-6) var(--sp-3);
     flex-shrink: 0;
+    flex-wrap: wrap;
 }
 
 .filter-btn {
     background: var(--bg-elevated);
     border: 1px solid var(--border-subtle);
     color: var(--text-muted);
-    padding: var(--sp-1) var(--sp-4);
+    padding: 4px var(--sp-4);
     border-radius: var(--r-full);
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     font-weight: 600;
     box-shadow: var(--shadow-inset);
     cursor: pointer;
     transition: all var(--t-fast) var(--ease-out);
+    letter-spacing: 0.02em;
 }
 
 .filter-btn:hover {
     border-color: var(--brand-primary);
     color: var(--brand-primary);
+    background: rgba(245, 158, 11, 0.05);
 }
 
 .filter-btn.active {
     background: var(--brand-primary);
     color: var(--bg-void);
     border-color: transparent;
-    box-shadow: 0 2px 10px rgba(245,158,11,0.3);
+    box-shadow: 0 2px 12px rgba(245,158,11,0.35);
+    transform: translateY(-1px);
 }
 
-/* Results list */
+/* ── Results list ───────────────────────────────────────── */
 .results-list {
     flex: 1;
     overflow-y: auto;
@@ -1051,17 +1419,29 @@ button:focus-visible {
     padding: var(--sp-4) var(--sp-5);
     border-left: 3px solid var(--border-default);
     transition: transform var(--t-fast) ease, box-shadow var(--t-fast) ease;
-    animation: resultSlideIn 0.3s var(--ease-out) both;
+    animation: resultSlideIn 0.32s var(--ease-out) both;
     box-shadow: var(--shadow-inset), var(--shadow-xs);
 }
 
+/* Spread stagger across first 20 items */
+.result-item:nth-child(1)  { animation-delay:   0ms; }
+.result-item:nth-child(2)  { animation-delay:  25ms; }
+.result-item:nth-child(3)  { animation-delay:  50ms; }
+.result-item:nth-child(4)  { animation-delay:  75ms; }
+.result-item:nth-child(5)  { animation-delay: 100ms; }
+.result-item:nth-child(6)  { animation-delay: 125ms; }
+.result-item:nth-child(7)  { animation-delay: 150ms; }
+.result-item:nth-child(8)  { animation-delay: 175ms; }
+.result-item:nth-child(n+9) { animation-delay: 200ms; }
+
 .result-item:hover {
-    transform: translateX(3px);
+    transform: translateX(4px);
     box-shadow: var(--shadow-sm);
+    border-color: var(--border-default);
 }
 
 @keyframes resultSlideIn {
-    from { opacity: 0; transform: translateX(-8px); }
+    from { opacity: 0; transform: translateX(-10px); }
     to   { opacity: 1; transform: translateX(0); }
 }
 
@@ -1079,7 +1459,7 @@ button:focus-visible {
 
 .result-item.skipped {
     border-left-color: var(--text-muted);
-    opacity: 0.7;
+    opacity: 0.65;
 }
 
 .result-meta {
@@ -1091,17 +1471,17 @@ button:focus-visible {
 
 .result-qnum {
     font-family: var(--font-mono);
-    font-size: 0.62rem;
+    font-size: 0.6rem;
     color: var(--text-muted);
     font-weight: 600;
     letter-spacing: 0.06em;
 }
 
 .result-status {
-    font-size: 0.6rem;
+    font-size: 0.58rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.1em;
     padding: 2px var(--sp-2);
     border-radius: var(--r-full);
 }
@@ -1109,13 +1489,16 @@ button:focus-visible {
 .result-item.correct .result-status { color: var(--success); background: rgba(16, 185, 129, 0.12); }
 .result-item.wrong   .result-status { color: var(--error);   background: rgba(239, 68, 68, 0.12); }
 
+/* FIX: .result-question is redefined by runtime CSS as flex;
+   keep the font styles here but don't fight the display:flex */
 .result-question {
+    /* display: flex is set by runtime CSS — compatible with these: */
     font-family: var(--font-display);
     font-size: 0.88rem;
     font-weight: 700;
     color: var(--text-heading);
     margin-bottom: var(--sp-2);
-    line-height: 1.45;
+    line-height: 1.48;
     letter-spacing: -0.01em;
 }
 
@@ -1125,13 +1508,15 @@ button:focus-visible {
     font-size: 0.78rem;
     color: var(--text-muted);
     flex-wrap: wrap;
+    margin-top: var(--sp-1);
 }
 
-.result-answer span { display: flex; align-items: center; gap: var(--sp-1); }
+.result-answer span     { display: flex; align-items: center; gap: var(--sp-1); }
 .result-answer .your-ans    { color: var(--error); }
 .result-answer .correct-ans { color: var(--success); }
+.result-answer .wrong-ans   { color: var(--error); }
 
-/* Result actions */
+/* ── Result actions row ─────────────────────────────────── */
 .result-actions {
     display: flex;
     justify-content: center;
@@ -1140,6 +1525,7 @@ button:focus-visible {
     border-top: 1px solid var(--border-faint);
     gap: var(--sp-3);
 }
+
 
 /* ─────────────────────────────────────────────────────────────
    14. FOOTER
@@ -1150,13 +1536,14 @@ footer {
     border-top: 1px solid var(--border-faint);
     color: var(--text-muted);
     font-family: var(--font-mono);
-    font-size: 0.6rem;
+    font-size: 0.58rem;
     text-align: center;
     font-weight: 500;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
     flex-shrink: 0;
-    opacity: 0.7;
+    opacity: 0.65;
 }
+
 
 /* ─────────────────────────────────────────────────────────────
    15. SCROLLBARS
@@ -1166,21 +1553,23 @@ footer {
 ::-webkit-scrollbar-thumb {
     background: var(--border-default);
     border-radius: var(--r-full);
+    transition: background 200ms;
 }
 ::-webkit-scrollbar-thumb:hover { background: var(--brand-primary); }
+::-webkit-scrollbar-corner { background: transparent; }
+
 
 /* ─────────────────────────────────────────────────────────────
    16. UTILITIES
 ───────────────────────────────────────────────────────────── */
 .hidden { display: none !important; }
 
-/* Stagger animation helper */
+/* Stagger animation utility */
 .stagger-children > * {
     animation: staggerIn 0.4s var(--ease-out) both;
 }
-
-.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
-.stagger-children > *:nth-child(2) { animation-delay: 60ms; }
+.stagger-children > *:nth-child(1) { animation-delay:   0ms; }
+.stagger-children > *:nth-child(2) { animation-delay:  60ms; }
 .stagger-children > *:nth-child(3) { animation-delay: 120ms; }
 .stagger-children > *:nth-child(4) { animation-delay: 180ms; }
 .stagger-children > *:nth-child(5) { animation-delay: 240ms; }
@@ -1209,11 +1598,11 @@ footer {
     transition: all 0.4s var(--ease-spring);
     white-space: nowrap;
 }
-
 .toast.visible {
     transform: translateX(-50%) translateY(0);
     opacity: 1;
 }
+
 
 /* ─────────────────────────────────────────────────────────────
    17. RESPONSIVE — TABLET (≤ 900px)
@@ -1235,12 +1624,12 @@ footer {
         border-bottom: 1px solid var(--border-subtle);
         padding: var(--sp-3) var(--sp-4);
         max-height: 160px;
-        overflow-x: hidden;
-        overflow-y: auto;
+        overflow: auto; /* allow scroll in narrow layout */
     }
 
     .palette-legend { flex-direction: row; gap: var(--sp-3); }
 
+    /* 10-col grid on tablet too — stays compact */
     .grid-buttons {
         grid-template-columns: repeat(10, 1fr);
         gap: 4px;
@@ -1248,10 +1637,14 @@ footer {
 
     .question-box {
         padding: var(--sp-5) var(--sp-6);
+        align-items: flex-start;
         justify-content: flex-start;
     }
 
-    .question-content-wrapper { max-width: 100%; }
+    .question-content-wrapper {
+        max-width: 100%;
+        margin: 0;
+    }
 
     .progress-area { padding: var(--sp-3) var(--sp-5); }
     .action-bar    { padding: var(--sp-3) var(--sp-5); }
@@ -1267,7 +1660,7 @@ footer {
 
     .header { padding: 0 var(--sp-4); }
     .title h1 { font-size: 1rem; }
-    #subTitle { display: none; }
+    #subTitle  { display: none; }
     .title::after { display: none; }
 
     .timer-box { padding: var(--sp-1) var(--sp-3); min-width: 70px; }
@@ -1275,7 +1668,7 @@ footer {
 
     .question-palette {
         padding: var(--sp-2) var(--sp-3);
-        max-height: 128px;
+        max-height: 120px;
     }
 
     .grid-buttons {
@@ -1283,16 +1676,20 @@ footer {
         gap: 3px;
     }
 
-    .q-btn { font-size: 0.58rem; }
+    .q-btn { font-size: 0.52rem; }
     .palette-progress { display: none; }
 
     .progress-area { padding: var(--sp-2) var(--sp-4); }
 
     .question-box {
         padding: var(--sp-4);
+        align-items: flex-start;
         justify-content: flex-start;
     }
 
+    .question-content-wrapper { margin: 0; }
+
+    #questionText,
     .question-text { font-size: 1.05rem; }
 
     .option-item {
@@ -1301,9 +1698,9 @@ footer {
     }
 
     .option-prefix {
-        width: 26px;
-        height: 26px;
-        font-size: 0.65rem;
+        width: 24px;
+        height: 24px;
+        font-size: 0.62rem;
     }
 
     .action-bar {
@@ -1325,11 +1722,16 @@ footer {
     .secondary-actions { padding: var(--sp-2) var(--sp-4) var(--sp-3); }
 
     .score-big { font-size: 3.5rem; }
-    .stats-row { flex-wrap: wrap; gap: var(--sp-2); padding: 0 var(--sp-4) var(--sp-4); }
+    .stats-row {
+        flex-wrap: wrap;
+        gap: var(--sp-2);
+        padding: 0 var(--sp-4) var(--sp-4);
+    }
     .results-list { padding: 0 var(--sp-4) var(--sp-4); }
     .result-actions { padding: var(--sp-4); }
-    footer { font-size: 0.55rem; }
+    footer { font-size: 0.52rem; }
 }
+
 
 /* ─────────────────────────────────────────────────────────────
    19. REDUCED MOTION
@@ -1339,6 +1741,7 @@ footer {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
+        animation-delay: 0ms !important;
     }
 
     .progress-fill::after { display: none; }
@@ -1347,4 +1750,12 @@ footer {
         animation: none;
         filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.6));
     }
+
+    .timer-box.urgent {
+        animation: none;
+        border-color: rgba(239, 68, 68, 0.5);
+    }
+
+    .option-item { animation: none; opacity: 1; transform: none; }
+    .result-item { animation: none; opacity: 1; transform: none; }
 }
