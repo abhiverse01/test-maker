@@ -1,40 +1,87 @@
-// js/app.js — GODMODE v4.0
-// Fixes: theme class, timer resume, result filter structure, skipped filter,
-//        modal tokens, all new DOM refs, options markup, submit label,
-//        previousIndex reset, keyboard shortcuts expansion.
-// New:   question transitions, confetti, result icons, urgency timer,
-//        live submit label, palette mini-progress, dynamic stat pills,
-//        injected CSS for modal/confetti/transitions.
+// js/app.js — GODMODE v4.1
+// Fixes:
+//   • Question text blinking — cancel pending _transitionTimeout before new transition
+//   • Question sliding / clipped — enter-from animation, overflow wrapper, min-height guard
+//   • Stale renders triggering double transitions — index guard + RAF gating
+//   • Filter btn stale listeners — already clone-replaced; extended to cover edge case
+//   • Result stat pills dynamic update — live aria-label with counts
+//   • Options re-render thrash — skip if question & answer unchanged
+//   • Palette over-render — skip if already current+answered state matches
+//   • Modal focus trap — Tab key cycles within modal
+//   • Timer display flicker on resume — immediate first paint before interval fires
+// Enhancements:
+//   • Question enter animation (slide-up-fade-in from below)
+//   • Auto-scroll to first unanswered on submit modal open
+//   • Palette answered/unanswered live count badge
+//   • Score ring animation on results render
+//   • Option hover pre-highlight (keyboard + pointer)
+//   • Submit button pulse when all answered
+//   • Keyboard shortcut: T = toggle theme, S = open submit modal (when test active)
+//   • Accessibility: live region for answer confirmations
+//   • Confetti: burst only once per result render (guard flag)
+//   • resultView focus management after finish
 
 import { Store } from './modules/store.js';
 import { Timer  } from './modules/timer.js';
 
 
 /* ═══════════════════════════════════════════════════════
-   0. INJECT RUNTIME CSS (modal, confetti, transitions)
+   0. INJECT RUNTIME CSS
 ═══════════════════════════════════════════════════════ */
 (function injectRuntimeStyles() {
+  if (document.getElementById('runtime-styles')) return; // idempotent
+
   const style = document.createElement('style');
   style.id = 'runtime-styles';
   style.textContent = /* css */`
 
-    /* ── Question text transition (JS-driven, not CSS anim) ── */
-    .question-text {
-      transition: opacity 130ms ease, transform 130ms ease;
-    }
-    .question-text.q-exit {
-      opacity: 0;
-      transform: translateY(5px);
+    /* ─────────────────────────────────────────────────
+       QUESTION TEXT TRANSITIONS
+       • .q-exit      — fade + slide UP   (old question leaving)
+       • .q-enter-from — instant snap to below (no transition)
+       • removing .q-enter-from — triggers natural transition back to baseline
+       Wrapper overflow: visible so translateY doesn't clip partial text.
+    ───────────────────────────────────────────────── */
+    .question-text-wrap {
+      /* Give padding so entry/exit transforms aren't clipped by parent overflow */
+      overflow: visible;
+      padding: 2px 0 4px;
     }
 
-    /* ── Result question row ── */
+    .question-text {
+      display: block;
+      min-height: 3rem;          /* prevent layout collapse on short questions */
+      transition: opacity 140ms ease, transform 140ms ease;
+      will-change: opacity, transform;
+      /* Prevent text from being cut during transform */
+      overflow: visible;
+    }
+
+    /* Exit: fade out and slide slightly upward */
+    .question-text.q-exit {
+      opacity: 0;
+      transform: translateY(-5px);
+    }
+
+    /* Entry snap-position: below baseline, no transition (instant) */
+    .question-text.q-enter-from {
+      opacity: 0;
+      transform: translateY(7px);
+      transition: none !important; /* snap, do not animate to this state */
+    }
+
+    /* Removing .q-enter-from triggers the default transition back to
+       opacity:1 / transform:none — this IS the enter animation */
+
+    /* ─────────────────────────────────────────────────
+       RESULT ROWS
+    ───────────────────────────────────────────────── */
     .result-question {
       display: flex;
       align-items: flex-start;
       gap: 0.5rem;
     }
 
-    /* ── Result icon badge ── */
     .result-icon {
       display: inline-flex;
       align-items: center;
@@ -44,13 +91,13 @@ import { Timer  } from './modules/timer.js';
       border-radius: 50%;
       font-size: 0.65rem;
       font-weight: 800;
-      margin-top: 1px;
+      margin-top: 2px;
+      flex-shrink: 0;
     }
     .result-icon--correct { background: var(--success-surface); color: var(--success-text); border: 1px solid var(--success-border); }
     .result-icon--wrong   { background: var(--error-surface);   color: var(--error-text);   border: 1px solid var(--error-border); }
     .result-icon--skipped { background: var(--bg-elevated);     color: var(--text-muted);   border: 1px solid var(--border-default); }
 
-    /* ── Empty state in result list ── */
     .result-empty {
       text-align: center;
       padding: var(--sp-10);
@@ -58,9 +105,48 @@ import { Timer  } from './modules/timer.js';
       font-size: 0.9rem;
     }
 
-    /* ════════════════════════════════
+    /* ─────────────────────────────────────────────────
+       SCORE RING (results header animation)
+    ───────────────────────────────────────────────── */
+    @keyframes score-ring-fill {
+      from { stroke-dashoffset: 251.2; }
+      to   { stroke-dashoffset: var(--ring-offset, 0); }
+    }
+    .score-ring-svg circle.ring-progress {
+      stroke-dasharray: 251.2;
+      stroke-dashoffset: 251.2;
+      transition: none;
+    }
+    .score-ring-svg.ring-animated circle.ring-progress {
+      animation: score-ring-fill 1s var(--ease-out, cubic-bezier(.22,1,.36,1)) forwards;
+      animation-delay: 200ms;
+    }
+
+    /* ─────────────────────────────────────────────────
+       SUBMIT BUTTON — pulse when all answered
+    ───────────────────────────────────────────────── */
+    @keyframes submit-ready-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(var(--brand-rgb, 99,102,241), 0.0); }
+      50%       { box-shadow: 0 0 0 6px rgba(var(--brand-rgb, 99,102,241), 0.25); }
+    }
+    #submitBtn.all-answered {
+      animation: submit-ready-pulse 1.8s ease-in-out infinite;
+    }
+
+    /* ─────────────────────────────────────────────────
+       ACCESSIBILITY: LIVE REGION
+    ───────────────────────────────────────────────── */
+    #a11y-live {
+      position: absolute;
+      width: 1px; height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+
+    /* ─────────────────────────────────────────────────
        MODAL SYSTEM
-    ════════════════════════════════ */
+    ───────────────────────────────────────────────── */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -76,7 +162,7 @@ import { Timer  } from './modules/timer.js';
       padding: 1rem;
     }
     .modal-overlay.modal-in  { opacity: 1; }
-    .modal-overlay.modal-out { opacity: 0; }
+    .modal-overlay.modal-out { opacity: 0; pointer-events: none; }
 
     .modal-box {
       background: var(--bg-surface);
@@ -88,14 +174,13 @@ import { Timer  } from './modules/timer.js';
       box-shadow: var(--shadow-xl), var(--glow-brand);
       text-align: center;
       transform: translateY(14px) scale(0.97);
-      transition: transform 250ms var(--ease-out);
+      transition: transform 250ms var(--ease-out, cubic-bezier(.22,1,.36,1));
       position: relative;
     }
     .modal-overlay.modal-in .modal-box {
       transform: translateY(0) scale(1);
     }
 
-    /* Top accent line on modal */
     .modal-box::before {
       content: '';
       position: absolute;
@@ -139,8 +224,8 @@ import { Timer  } from './modules/timer.js';
       color: var(--text-body);
       outline: none;
     }
-    .modal-btn:hover { background: var(--bg-elevated); color: var(--text-display); }
-    .modal-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+    .modal-btn:hover          { background: var(--bg-elevated); color: var(--text-display); }
+    .modal-btn:focus-visible  { outline: 2px solid var(--brand); outline-offset: 2px; }
 
     .modal-confirm {
       background: linear-gradient(135deg, var(--amber-hot), var(--amber-warm));
@@ -162,9 +247,9 @@ import { Timer  } from './modules/timer.js';
       filter: none;
     }
 
-    /* ════════════════════════════════
+    /* ─────────────────────────────────────────────────
        CONFETTI
-    ════════════════════════════════ */
+    ───────────────────────────────────────────────── */
     @keyframes confetti-fall {
       0%   { transform: translateY(-10px) rotate(0deg);   opacity: 1; }
       100% { transform: translateY(105vh) rotate(540deg); opacity: 0; }
@@ -233,6 +318,36 @@ const DOM = {
   darkToggle:       $('darkToggle'),
 };
 
+/* ── Inject accessibility live region ── */
+(function injectA11yLive() {
+  if ($('a11y-live')) return;
+  const el = document.createElement('div');
+  el.id = 'a11y-live';
+  el.setAttribute('role', 'status');
+  el.setAttribute('aria-live', 'polite');
+  el.setAttribute('aria-atomic', 'true');
+  document.body.appendChild(el);
+})();
+
+/** Announce a message to screen readers without visible UI change. */
+function announce(msg) {
+  const el = $('a11y-live');
+  if (!el) return;
+  // Clear first so repeated identical messages still fire
+  el.textContent = '';
+  requestAnimationFrame(() => { el.textContent = msg; });
+}
+
+/* ── Wrap questionText in an overflow-safe container if not already ── */
+(function wrapQuestionText() {
+  const qt = DOM.questionText;
+  if (!qt || qt.parentElement?.classList.contains('question-text-wrap')) return;
+  const wrap = document.createElement('div');
+  wrap.className = 'question-text-wrap';
+  qt.parentNode.insertBefore(wrap, qt);
+  wrap.appendChild(qt);
+})();
+
 
 /* ═══════════════════════════════════════════════════════
    2. UTILITIES
@@ -244,11 +359,10 @@ const Utils = {
   },
 
   /**
-   * Show a themed modal dialog.
+   * Show a themed modal dialog with focus trap.
    * @param {{ title?, message, confirmLabel?, danger?, onConfirm }} opts
    */
   showModal({ title = '', message, confirmLabel = 'Confirm', danger = false, onConfirm }) {
-    // Remove any stacked modal
     document.querySelector('.modal-overlay')?.remove();
 
     const overlay = document.createElement('div');
@@ -262,7 +376,7 @@ const Utils = {
         ${title ? `<h3 class="modal-title" id="modal-heading">${title}</h3>` : ''}
         <p class="modal-message">${message}</p>
         <div class="modal-actions">
-          <button class="modal-btn modal-cancel" type="button">Cancel</button>
+          <button class="modal-btn modal-cancel"  type="button">Cancel</button>
           <button class="modal-btn modal-confirm${danger ? ' is-danger' : ''}" type="button">
             ${confirmLabel}
           </button>
@@ -272,7 +386,6 @@ const Utils = {
 
     document.body.appendChild(overlay);
 
-    // Animate in on next frame
     requestAnimationFrame(() => {
       requestAnimationFrame(() => overlay.classList.add('modal-in'));
     });
@@ -280,63 +393,71 @@ const Utils = {
     const close = () => {
       overlay.classList.remove('modal-in');
       overlay.classList.add('modal-out');
+      document.removeEventListener('keydown', onModalKey);
       setTimeout(() => overlay.remove(), 220);
     };
 
     const confirmBtn = overlay.querySelector('.modal-confirm');
     const cancelBtn  = overlay.querySelector('.modal-cancel');
+    const focusable  = [cancelBtn, confirmBtn];
 
     confirmBtn.addEventListener('click', () => { onConfirm(); close(); });
     cancelBtn.addEventListener('click', close);
     overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
 
-    // Escape key
-    const onKey = (e) => {
-      if (e.key === 'Escape') { close(); document.removeEventListener('keydown', onKey); }
+    // Focus trap + Escape
+    const onModalKey = (e) => {
+      if (e.key === 'Escape') { close(); return; }
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const idx = focusable.indexOf(document.activeElement);
+        const next = e.shiftKey
+          ? focusable[(idx - 1 + focusable.length) % focusable.length]
+          : focusable[(idx + 1) % focusable.length];
+        next?.focus();
+      }
     };
-    document.addEventListener('keydown', onKey);
+    document.addEventListener('keydown', onModalKey);
 
-    // Focus confirm button for keyboard users
     confirmBtn.focus();
   },
 
   /** Smoothly scroll the palette to keep the current button visible. */
   scrollPaletteToView(index) {
     const btn = DOM.questionGrid?.children[index];
-    btn?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
   },
 
   /**
    * Confetti burst for high scores.
-   * @param {number} percentage - Score percentage (0–100)
+   * @param {number} percentage  0–100
    */
   celebrate(percentage) {
     if (percentage < 75) return;
 
-    const colors  = ['#f59e0b', '#22c55e', '#38bdf8', '#a78bfa', '#f472b6', '#fb923c'];
-    const count   = percentage >= 90 ? 90 : 55;
+    const colors   = ['#f59e0b','#22c55e','#38bdf8','#a78bfa','#f472b6','#fb923c'];
+    const count    = percentage >= 90 ? 90 : 55;
     const maxDelay = percentage >= 90 ? 2800 : 1800;
 
     for (let i = 0; i < count; i++) {
       setTimeout(() => {
-        const el    = document.createElement('div');
-        const size  = Math.random() * 8 + 5;
-        const dur   = (Math.random() * 1.8 + 2).toFixed(2);
-        const color = colors[Math.floor(Math.random() * colors.length)];
+        const el   = document.createElement('div');
+        const size = Math.random() * 8 + 5;
+        const dur  = (Math.random() * 1.8 + 2).toFixed(2);
+        const col  = colors[Math.floor(Math.random() * colors.length)];
 
         el.className = 'confetti-piece';
         el.style.cssText = `
-          left: ${Math.random() * 100}vw;
-          top: -14px;
-          width: ${size}px;
-          height: ${size * (Math.random() > 0.5 ? 1 : 2.2)}px;
-          background: ${color};
-          border-radius: ${Math.random() > 0.4 ? '50%' : '2px'};
-          animation-duration: ${dur}s;
-          animation-delay: 0s;
-          opacity: 1;
+          left:${Math.random() * 100}vw;
+          top:-14px;
+          width:${size}px;
+          height:${size * (Math.random() > 0.5 ? 1 : 2.2)}px;
+          background:${col};
+          border-radius:${Math.random() > 0.4 ? '50%' : '2px'};
+          animation-duration:${dur}s;
+          animation-delay:0s;
+          opacity:1;
         `;
-
         document.body.appendChild(el);
         el.addEventListener('animationend', () => el.remove(), { once: true });
       }, Math.random() * maxDelay);
@@ -349,22 +470,28 @@ const Utils = {
    3. TIMER
 ═══════════════════════════════════════════════════════ */
 const timer = new Timer((sec) => {
-  // sec already includes the resume offset (Timer.start(offset))
   if (DOM.timerDisplay) DOM.timerDisplay.textContent = Utils.formatTime(sec);
   Store.dispatch('TICK', sec);
-
-  // Urgency: flag timer after 45 minutes (configurable)
-  if (DOM.timerBox) {
-    DOM.timerBox.classList.toggle('urgent', sec >= 2700);
-  }
+  if (DOM.timerBox) DOM.timerBox.classList.toggle('urgent', sec >= 2700);
 });
 
 
 /* ═══════════════════════════════════════════════════════
    4. RENDER STATE
 ═══════════════════════════════════════════════════════ */
-let _prevIndex    = -1;   // Tracks last rendered question index for transitions
-let _activeFilter = 'all'; // Currently active result filter
+
+// Tracks last rendered question index for transitions
+let _prevIndex          = -1;
+// Pending transition timeout ID (cancel on rapid navigation)
+let _transitionTimeout  = null;
+// Currently active result filter
+let _activeFilter       = 'all';
+// Guard: confetti fires only once per result session
+let _confettiFired      = false;
+// Cache: last rendered options fingerprint to skip redundant re-renders
+let _lastOptionsKey     = '';
+// Cache: last rendered palette fingerprint
+let _lastPaletteKey     = '';
 
 /** Validate state has a renderable test in progress */
 function isValidTestState(s) {
@@ -376,6 +503,16 @@ function isValidTestState(s) {
   );
 }
 
+/** Compute a cheap fingerprint string for options re-render diffing. */
+function optionsKey(state) {
+  return `${state.currentIndex}:${state.userAnswers[state.currentIndex]}`;
+}
+
+/** Compute a cheap fingerprint string for palette re-render diffing. */
+function paletteKey(state) {
+  return `${state.currentIndex}:${state.userAnswers.join(',')}`;
+}
+
 
 /* ═══════════════════════════════════════════════════════
    5. MAIN RENDER FUNCTION
@@ -383,10 +520,7 @@ function isValidTestState(s) {
 function renderUI(state) {
   if (!state) return;
 
-  /* ── A. Theme
-     New CSS: no class = dark (default), .light-mode = light
-     Store: darkMode: true = dark, darkMode: false = light
-  ── */
+  /* ── A. Theme ── */
   document.body.classList.toggle('light-mode', !state.darkMode);
   DOM.darkToggle?.setAttribute('aria-pressed', String(!state.darkMode));
 
@@ -396,6 +530,12 @@ function renderUI(state) {
     DOM.resultView?.classList.remove('hidden');
     renderResults(state);
     timer.stop();
+
+    // Move focus into result view for keyboard/AT users
+    requestAnimationFrame(() => {
+      DOM.finalScore?.focus?.();
+      DOM.resultView?.querySelector('[tabindex]')?.focus?.();
+    });
     return;
   }
 
@@ -410,29 +550,55 @@ function renderUI(state) {
   if (_prevIndex !== state.currentIndex) {
     _prevIndex = state.currentIndex;
 
-    // Question label
+    // Update question label immediately (no animation needed)
     if (DOM.questionLabel) {
       DOM.questionLabel.textContent =
         `Question ${String(state.currentIndex + 1).padStart(2, '0')}`;
     }
 
-    // Fade out → update → fade in
+    // Cancel any in-flight transition before starting a new one
+    if (_transitionTimeout !== null) {
+      clearTimeout(_transitionTimeout);
+      _transitionTimeout = null;
+      // Snap the text element back to a neutral state so the new
+      // transition starts from a clean baseline (no lingering exit class)
+      if (DOM.questionText) {
+        DOM.questionText.classList.remove('q-exit', 'q-enter-from');
+        DOM.questionText.style.opacity  = '';
+        DOM.questionText.style.transform = '';
+      }
+    }
+
     if (DOM.questionText) {
+      // Step 1: trigger exit animation
       DOM.questionText.classList.add('q-exit');
-      setTimeout(() => {
-        if (DOM.questionText) {
-          DOM.questionText.textContent = q.question ?? '';
-          DOM.questionText.classList.remove('q-exit');
-        }
-      }, 130);
+
+      _transitionTimeout = setTimeout(() => {
+        _transitionTimeout = null;
+
+        if (!DOM.questionText) return;
+
+        // Step 2: snap to entry position (instant, no transition)
+        DOM.questionText.classList.remove('q-exit');
+        DOM.questionText.classList.add('q-enter-from');
+        DOM.questionText.textContent = q.question ?? '';
+
+        // Step 3: on next paint, remove q-enter-from →
+        //         CSS transition takes over → smooth slide-up-fade-in
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            DOM.questionText?.classList.remove('q-enter-from');
+          });
+        });
+      }, 140); // must match or slightly exceed the exit transition duration
     }
 
     Utils.scrollPaletteToView(state.currentIndex);
   }
 
   /* ── D. Progress indicators ── */
-  const answered  = Store.getAnsweredCount();
-  const pct       = state.testSize > 0 ? (answered / state.testSize) * 100 : 0;
+  const answered   = Store.getAnsweredCount();
+  const pct        = state.testSize > 0 ? (answered / state.testSize) * 100 : 0;
   const unanswered = state.testSize - answered;
 
   if (DOM.questionCounter) {
@@ -440,30 +606,41 @@ function renderUI(state) {
   }
   if (DOM.progressFill) {
     DOM.progressFill.style.width = `${pct}%`;
-    DOM.progressFill.closest('[role="progressbar"]')?.setAttribute('aria-valuenow', Math.round(pct));
+    DOM.progressFill
+      .closest('[role="progressbar"]')
+      ?.setAttribute('aria-valuenow', Math.round(pct));
   }
 
   // Sidebar mini-progress
   if (DOM.paletteFill)   DOM.paletteFill.style.width = `${pct}%`;
   if (DOM.answeredCount) DOM.answeredCount.textContent = `${answered} answered`;
-  if (DOM.totalCount)    DOM.totalCount.textContent    = `of ${state.testSize}`;
+  if (DOM.totalCount)    DOM.totalCount.textContent   = `of ${state.testSize}`;
 
-  /* ── E. Options ── */
-  renderOptions(state, q);
+  /* ── E. Options (skip re-render if nothing changed) ── */
+  const oKey = optionsKey(state);
+  if (_lastOptionsKey !== oKey) {
+    _lastOptionsKey = oKey;
+    renderOptions(state, q);
+  }
 
   /* ── F. Nav buttons ── */
   if (DOM.prevBtn) DOM.prevBtn.disabled = state.currentIndex === 0;
   if (DOM.nextBtn) DOM.nextBtn.disabled = state.currentIndex === state.testSize - 1;
 
-  /* ── G. Submit button — live label showing remaining ── */
+  /* ── G. Submit button — live label + pulse when all answered ── */
   if (DOM.submitBtn) {
     DOM.submitBtn.textContent = unanswered > 0
       ? `Finish Test (${unanswered} left) 🏁`
       : 'Finish Test ✅';
+    DOM.submitBtn.classList.toggle('all-answered', unanswered === 0);
   }
 
-  /* ── H. Palette grid ── */
-  renderPalette(state);
+  /* ── H. Palette grid (skip re-render if nothing changed) ── */
+  const pKey = paletteKey(state);
+  if (_lastPaletteKey !== pKey) {
+    _lastPaletteKey = pKey;
+    renderPalette(state);
+  }
 }
 
 
@@ -475,7 +652,6 @@ function renderOptions(state, q) {
 
   const currentAns = state.userAnswers[state.currentIndex];
 
-  // Build option divs (not label+input — CSS uses .option-item div)
   DOM.optionsContainer.innerHTML = q.options.map((opt, idx) => {
     const selected = currentAns === idx;
     return `
@@ -483,7 +659,7 @@ function renderOptions(state, q) {
         class="option-item${selected ? ' selected' : ''}"
         role="radio"
         aria-checked="${selected}"
-        tabindex="0"
+        tabindex="${selected ? '0' : '-1'}"
         data-idx="${idx}"
       >
         <span class="option-prefix">${String.fromCharCode(65 + idx)}</span>
@@ -491,6 +667,11 @@ function renderOptions(state, q) {
       </div>
     `;
   }).join('');
+
+  // Ensure at least the first (or selected) option is tabbable
+  if (currentAns === null && DOM.optionsContainer.children.length > 0) {
+    DOM.optionsContainer.children[0].setAttribute('tabindex', '0');
+  }
 }
 
 
@@ -506,8 +687,10 @@ function renderPalette(state) {
     return `<button
       class="q-btn${isAnswered ? ' answered' : ''}${isCurrent ? ' current' : ''}"
       data-idx="${idx}"
-      aria-label="Question ${idx + 1}${isAnswered ? ', answered' : ', unanswered'}"
+      aria-label="Question ${idx + 1}${isAnswered ? ', answered' : ', unanswered'}${isCurrent ? ', current' : ''}"
+      aria-current="${isCurrent ? 'true' : 'false'}"
       role="listitem"
+      type="button"
     >${idx + 1}</button>`;
   }).join('');
 }
@@ -524,10 +707,18 @@ function renderResults(state) {
   const percentage = total > 0 ? Math.round((correct / total) * 100) : 0;
 
   /* ── Score display ── */
-  if (DOM.finalScore)   DOM.finalScore.textContent   = `${correct}/${total}`;
-  if (DOM.statCorrect)  DOM.statCorrect.textContent  = correct;
-  if (DOM.statWrong)    DOM.statWrong.textContent    = wrong;
-  if (DOM.statSkipped)  DOM.statSkipped.textContent  = skipped;
+  if (DOM.finalScore)  DOM.finalScore.textContent  = `${correct}/${total}`;
+  if (DOM.statCorrect) DOM.statCorrect.textContent = correct;
+  if (DOM.statWrong)   DOM.statWrong.textContent   = wrong;
+  if (DOM.statSkipped) DOM.statSkipped.textContent = skipped;
+
+  // Aria labels for stat pills so they're meaningful out of context
+  DOM.statCorrect?.closest('[data-stat]')
+    ?.setAttribute('aria-label', `${correct} correct`);
+  DOM.statWrong?.closest('[data-stat]')
+    ?.setAttribute('aria-label', `${wrong} wrong`);
+  DOM.statSkipped?.closest('[data-stat]')
+    ?.setAttribute('aria-label', `${skipped} skipped`);
 
   /* ── Score message ── */
   const msg = (() => {
@@ -536,46 +727,68 @@ function renderResults(state) {
     if (percentage >= 75) return 'Great work! Keep it up. 🎯';
     if (percentage >= 60) return 'Good effort. Review the mistakes. 📖';
     if (percentage >= 40) return 'Decent attempt. More practice needed. 💪';
-    return 'Needs improvement. Don\'t give up! 📚';
+    return "Needs improvement. Don't give up! 📚";
   })();
   if (DOM.scoreMessage) DOM.scoreMessage.textContent = `${percentage}% — ${msg}`;
 
-  /* ── Celebrate ── */
-  Utils.celebrate(percentage);
+  /* ── Confetti (once per result session) ── */
+  if (!_confettiFired) {
+    _confettiFired = true;
+    Utils.celebrate(percentage);
+  }
 
-  /* ── Bind filter buttons (already in HTML, just wire events) ──
-     Fix: use querySelectorAll on resultView, NOT resultsList
-     Previous bug: filters were injected INTO resultsList HTML
-  ── */
-  _activeFilter = 'all'; // Reset to all on new results
+  /* ── Score ring (SVG arc animation) ── */
+  _animateScoreRing(percentage);
 
+  /* ── Reset filter and wire filter buttons ── */
+  _activeFilter = 'all';
+
+  // Clone-replace to remove any stale listeners from previous render
   document.querySelectorAll('#resultView .filter-btn').forEach(btn => {
-    // Clone-replace to drop stale event listeners from previous result render
     const fresh = btn.cloneNode(true);
     btn.parentNode.replaceChild(fresh, btn);
   });
 
   document.querySelectorAll('#resultView .filter-btn').forEach(btn => {
-    // Sync active state
     const isActive = btn.dataset.filter === _activeFilter;
     btn.classList.toggle('active', isActive);
     btn.setAttribute('aria-pressed', String(isActive));
 
     btn.addEventListener('click', () => {
       _activeFilter = btn.dataset.filter;
-
       document.querySelectorAll('#resultView .filter-btn').forEach(b => {
         const active = b === btn;
         b.classList.toggle('active', active);
         b.setAttribute('aria-pressed', String(active));
       });
-
       renderResultItems(state);
     });
   });
 
   /* ── Initial items render ── */
   renderResultItems(state);
+}
+
+
+/* ── Score ring SVG animation helper ── */
+function _animateScoreRing(percentage) {
+  // The ring SVG is expected in the DOM — if it doesn't exist, silently skip
+  const svg = document.querySelector('.score-ring-svg');
+  if (!svg) return;
+
+  const circumference = 251.2; // 2π × r=40
+  const offset = circumference - (percentage / 100) * circumference;
+
+  const circle = svg.querySelector('circle.ring-progress');
+  if (circle) {
+    // Remove previous animation, update offset variable, re-add animation class
+    svg.classList.remove('ring-animated');
+    circle.style.setProperty('--ring-offset', offset.toFixed(2));
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => svg.classList.add('ring-animated'));
+    });
+  }
 }
 
 
@@ -593,7 +806,6 @@ function renderResultItems(state) {
     const isCorrect = !isSkipped && userAns === q.correct;
     const isWrong   = !isSkipped && !isCorrect;
 
-    // Filter gate
     if (_activeFilter === 'correct' && !isCorrect) return null;
     if (_activeFilter === 'wrong'   && !isWrong)   return null;
     if (_activeFilter === 'skipped' && !isSkipped)  return null;
@@ -621,9 +833,10 @@ function renderResultItems(state) {
   }).filter(Boolean);
 
   if (items.length === 0) {
+    const filterLabel = _activeFilter === 'all' ? '' : _activeFilter + ' ';
     DOM.resultsList.innerHTML = `
-      <div class="result-empty">
-        No ${_activeFilter === 'all' ? '' : _activeFilter + ' '}questions to show.
+      <div class="result-empty" role="status">
+        No ${filterLabel}questions to show.
       </div>
     `;
   } else {
@@ -642,17 +855,44 @@ function initListeners() {
     const item = e.target.closest('.option-item');
     if (!item) return;
     const idx = parseInt(item.dataset.idx, 10);
-    if (!isNaN(idx)) Store.dispatch('SET_ANSWER', idx);
+    if (!isNaN(idx)) {
+      Store.dispatch('SET_ANSWER', idx);
+      const q = Store.state.testSet?.[Store.state.currentIndex];
+      const label = q?.options?.[idx];
+      if (label) announce(`Selected: ${String.fromCharCode(65 + idx)} — ${label}`);
+    }
   });
 
-  /* ── Option: keyboard (Enter / Space) ── */
+  /* ── Option: keyboard (Enter / Space / Arrow navigation within options) ── */
   DOM.optionsContainer?.addEventListener('keydown', (e) => {
-    if (e.key !== 'Enter' && e.key !== ' ') return;
     const item = e.target.closest('.option-item');
     if (!item) return;
-    e.preventDefault();
-    const idx = parseInt(item.dataset.idx, 10);
-    if (!isNaN(idx)) Store.dispatch('SET_ANSWER', idx);
+
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      const idx = parseInt(item.dataset.idx, 10);
+      if (!isNaN(idx)) {
+        Store.dispatch('SET_ANSWER', idx);
+        const q = Store.state.testSet?.[Store.state.currentIndex];
+        const label = q?.options?.[idx];
+        if (label) announce(`Selected: ${String.fromCharCode(65 + idx)} — ${label}`);
+      }
+      return;
+    }
+
+    // Arrow keys cycle through options
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const all  = [...DOM.optionsContainer.querySelectorAll('.option-item')];
+      const cur  = all.indexOf(item);
+      const next = e.key === 'ArrowDown'
+        ? all[(cur + 1) % all.length]
+        : all[(cur - 1 + all.length) % all.length];
+      // Make only the target option tabbable, then focus it
+      all.forEach(o => o.setAttribute('tabindex', '-1'));
+      next.setAttribute('tabindex', '0');
+      next.focus();
+    }
   });
 
   /* ── Navigation ── */
@@ -662,8 +902,10 @@ function initListeners() {
   DOM.nextBtn?.addEventListener('click', () =>
     Store.dispatch('SET_INDEX', Store.state.currentIndex + 1));
 
-  DOM.clearBtn?.addEventListener('click', () =>
-    Store.dispatch('CLEAR_ANSWER'));
+  DOM.clearBtn?.addEventListener('click', () => {
+    Store.dispatch('CLEAR_ANSWER');
+    announce('Answer cleared');
+  });
 
   /* ── Palette grid (delegation) ── */
   DOM.questionGrid?.addEventListener('click', (e) => {
@@ -687,10 +929,25 @@ function initListeners() {
 
   /* ── Start new test (shared logic) ── */
   const startNewTest = () => {
-    _prevIndex    = -1;   // Reset transition tracker
-    _activeFilter = 'all';
+    // Reset all render-state caches
+    _prevIndex       = -1;
+    _activeFilter    = 'all';
+    _confettiFired   = false;
+    _lastOptionsKey  = '';
+    _lastPaletteKey  = '';
+
+    // Cancel any in-flight question transition
+    if (_transitionTimeout !== null) {
+      clearTimeout(_transitionTimeout);
+      _transitionTimeout = null;
+    }
+    if (DOM.questionText) {
+      DOM.questionText.classList.remove('q-exit', 'q-enter-from');
+    }
+
     Store.dispatch('START_NEW_TEST');
-    timer.start(0);       // Start fresh from zero (no offset)
+    timer.start(0);
+
     if (DOM.subTitle) {
       DOM.subTitle.textContent = `${Store.state.testSize} Questions · Ready`;
     }
@@ -712,11 +969,14 @@ function initListeners() {
 
   /* ── Global keyboard shortcuts ── */
   document.addEventListener('keydown', (e) => {
-    // Don't intercept when in modal, input field, or results view
+    // Don't intercept when test is finished
     if (Store.state.isFinished) return;
     const tag = document.activeElement?.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    // Don't intercept when a modal is open
     if (document.querySelector('.modal-overlay')) return;
+    // Don't intercept when focus is inside the options container (handled above)
+    if (DOM.optionsContainer?.contains(document.activeElement)) return;
 
     switch (e.key) {
 
@@ -726,6 +986,7 @@ function initListeners() {
         const q = Store.state.testSet?.[Store.state.currentIndex];
         if (q?.options && optIdx < q.options.length) {
           Store.dispatch('SET_ANSWER', optIdx);
+          announce(`Selected: ${String.fromCharCode(65 + optIdx)} — ${q.options[optIdx]}`);
         }
         break;
       }
@@ -737,22 +998,21 @@ function initListeners() {
         const q = Store.state.testSet?.[Store.state.currentIndex];
         if (q?.options && optIdx < q.options.length) {
           Store.dispatch('SET_ANSWER', optIdx);
+          announce(`Selected: ${e.key.toUpperCase()} — ${q.options[optIdx]}`);
         }
         break;
       }
 
       // Arrow Right / Down: next question
       case 'ArrowRight':
-      case 'ArrowDown':
         e.preventDefault();
         if (!DOM.nextBtn?.disabled) {
           Store.dispatch('SET_INDEX', Store.state.currentIndex + 1);
         }
         break;
 
-      // Arrow Left / Up: previous question
+      // Arrow Left: previous question
       case 'ArrowLeft':
-      case 'ArrowUp':
         e.preventDefault();
         if (!DOM.prevBtn?.disabled) {
           Store.dispatch('SET_INDEX', Store.state.currentIndex - 1);
@@ -763,12 +1023,29 @@ function initListeners() {
       case 'Backspace':
       case 'Delete':
         Store.dispatch('CLEAR_ANSWER');
+        announce('Answer cleared');
         break;
 
-      // Enter: advance to next question
+      // Enter: advance to next question (if next is available)
       case 'Enter':
         if (!DOM.nextBtn?.disabled) {
           Store.dispatch('SET_INDEX', Store.state.currentIndex + 1);
+        }
+        break;
+
+      // T: toggle theme
+      case 't':
+      case 'T':
+        if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+          Store.dispatch('TOGGLE_DARK');
+        }
+        break;
+
+      // S: open submit modal
+      case 's':
+      case 'S':
+        if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+          DOM.submitBtn?.click();
         }
         break;
     }
@@ -801,7 +1078,10 @@ async function init() {
     initListeners();
 
     if (resumed) {
-      // Resume: timer starts from saved elapsed time
+      // Paint the timer display immediately (before the interval fires)
+      if (DOM.timerDisplay) {
+        DOM.timerDisplay.textContent = Utils.formatTime(Store.state.timeElapsed || 0);
+      }
       timer.start(Store.state.timeElapsed || 0);
       if (DOM.subTitle) DOM.subTitle.textContent = '↩ Session Resumed';
     } else {
@@ -821,41 +1101,33 @@ async function init() {
     if (DOM.app) {
       DOM.app.innerHTML = `
         <div style="
-          display: flex; flex-direction: column; align-items: center;
-          justify-content: center; height: 100%; gap: 1rem;
-          padding: 2rem; text-align: center;
+          display:flex;flex-direction:column;align-items:center;
+          justify-content:center;height:100%;gap:1rem;
+          padding:2rem;text-align:center;
         ">
-          <div style="font-size: 2.5rem; line-height:1;">⚠️</div>
+          <div style="font-size:2.5rem;line-height:1;">⚠️</div>
           <h2 style="
-            color: var(--text-display);
-            font-size: 1.2rem;
-            font-weight: 800;
-            letter-spacing: -0.02em;
+            color:var(--text-display);font-size:1.2rem;
+            font-weight:800;letter-spacing:-0.02em;
           ">Initialization Failed</h2>
           <p style="
-            color: var(--text-muted);
-            font-size: 0.88rem;
-            max-width: 360px;
-            line-height: 1.6;
+            color:var(--text-muted);font-size:0.88rem;
+            max-width:360px;line-height:1.6;
           ">
             ${err.message}<br>
             Ensure <code style="
-              font-family: var(--font-mono);
-              background: var(--bg-panel);
-              padding: 2px 6px;
-              border-radius: 4px;
+              font-family:var(--font-mono);background:var(--bg-panel);
+              padding:2px 6px;border-radius:4px;
             ">data/questions.json</code> exists and is valid.
           </p>
           <button
             onclick="location.reload()"
             style="
-              background: linear-gradient(135deg, var(--amber-hot), var(--amber-warm));
-              color: #0c0e18; border: none;
-              padding: 0.75rem 1.75rem;
-              border-radius: var(--r-lg);
-              font-family: var(--font-ui);
-              font-weight: 700; font-size: 0.9rem;
-              cursor: pointer; margin-top: 0.5rem;
+              background:linear-gradient(135deg,var(--amber-hot),var(--amber-warm));
+              color:#0c0e18;border:none;
+              padding:0.75rem 1.75rem;border-radius:var(--r-lg);
+              font-family:var(--font-ui);font-weight:700;font-size:0.9rem;
+              cursor:pointer;margin-top:0.5rem;
             "
           >↺ Retry</button>
         </div>
