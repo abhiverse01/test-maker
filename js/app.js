@@ -35,6 +35,7 @@ import { Timer  } from './modules/timer.js';
   style.id = 'runtime-styles';
   style.textContent = /* css */`
 
+
     /* ─────────────────────────────────────────────────
        QUESTION TEXT TRANSITIONS
        • .q-exit      — fade + slide UP   (old question leaving)
